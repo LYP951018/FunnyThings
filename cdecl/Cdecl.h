@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <exception>
 
 struct InvalidTypeName :std::exception
@@ -41,8 +42,8 @@ public:
 		kRightBrace,
 		kComma
 	};
-	void Start();
-	std::wstring GetAnswer();
+	void Start(bool isAbstract = false);
+	std::wstring GetAnswer(bool isAbstract);
 private:
 	
 	
@@ -72,7 +73,8 @@ private:
 	std::size_t curPos_{};
 	std::wstring answer_;
 	std::wstring dataName_;
-	std::wstring dataType_;
+	std::vector<std::wstring> dataType_;
 	std::wstring curToken_;
+	std::size_t nowDataTypeIndex_{};
 	TokenType curTokenType_{};
 };
