@@ -48,12 +48,12 @@ Cdecl::Cdecl(std::wstring str)
 void Cdecl::Start()
 {
 	dataType_ = GetTypeName();
-	ParseDeclarator();
+	ParseDeclarator(false);
 }
 
 std::wstring Cdecl::GetAnswer()
 {
-	return dataName_ + L" is "s + answer_ + dataType_;
+	return dataName_ + L" is"s + answer_ + L" "s + dataType_;
 }
 
 void Cdecl::SkipSpace()
@@ -80,6 +80,9 @@ bool Cdecl::GetToken()
 		break;
 	case L')':
 		curTokenType_ = TokenType::kRightBrace;
+		break;
+	case L',':
+		curTokenType_ = TokenType::kComma;
 		break;
 	case L'[':
 	{
@@ -129,7 +132,7 @@ Cdecl::TokenType Cdecl::GetType(const std::wstring & token)
 
 std::wstring Cdecl::GetTypeName()
 {
-	std::wstring typeName;
+	std::wstring typeName ;
 	GetToken();
 	bool hasSigned = false;
 	if (curTokenType_ == TokenType::kTypeQualifier)
@@ -154,13 +157,13 @@ std::wstring Cdecl::GetTypeName()
 		}
 		if(i == 2 && (!hasSigned || curToken_ != L"long")) throw InvalidTypeName();
 		if (i > 2) throw InvalidTypeName();
-		typeName += curToken_;
+		typeName += L" "s += curToken_;
 	}
 	UnGetToken();
 	return std::move(typeName);
 }
 
-bool Cdecl::ParsePointer()
+bool Cdecl::ParsePointer(std::wstring& str)
 {
 	/*(6.7.5) pointer: * type - quali?er - listopt 
 					   * type - quali?er - listopt pointer*/
@@ -176,44 +179,78 @@ bool Cdecl::ParsePointer()
 			else break;
 		}
 		UnGetToken();
-		answer_ += L"a"s += pointerQualifier += (pointerQualifier.empty() ? L""s : L" "s)+= L" pointer point to ";
-		ParsePointer();
+		str += L" "s += pointerQualifier += (pointerQualifier.empty() ? L""s : L" "s)+= L"pointer point to";
+		ParsePointer(str);
 		return true;
 	};
 	UnGetToken();
 	return false;
 }
 
-void Cdecl::ParseDeclarator()
+void Cdecl::ParseDeclarator(bool isAbstract)
 {
-	ParsePointer();
-	ParseDirectDeclarator();
+	std::wstring str;
+	ParsePointer(str);
+	ParseDirectDeclarator(isAbstract);
+	answer_ += str;
 }
 
-void Cdecl::ParseDirectDeclarator()
+void Cdecl::ParseDirectDeclarator(bool isAbstract)
 {
 	GetToken();
 	if (curTokenType_ == TokenType::kLeftBrace)
 	{
-		ParseDeclarator();
+		ParseDeclarator(isAbstract);
 		GetToken();
 		if (curTokenType_ != TokenType::kRightBrace) throw InvalidBrace();
 	}
-	else if (curTokenType_ == TokenType::kIdentifier)
+	else if (!isAbstract && curTokenType_ == TokenType::kIdentifier)
 		dataName_ = curToken_;
 	else throw InvalidSyntax();
 	start:
 	{
-		if (!GetToken()) return;
+		if (!GetToken()) 
+			return;
 		if (curTokenType_ == TokenType::kBrackets)
 		{
-			answer_ += L"an array "s += curToken_ += L" of ";
+			answer_ += L" an array "s += curToken_ += L" of";
 			goto start;
 		}
 		else if (curTokenType_ == TokenType::kLeftBrace)
 		{
 			//function type,TODO
-			answer_ += L"function returning ";
+			answer_ += L" function with params: ";
+			GetToken();
+			if (curTokenType_ == TokenType::kRightBrace)
+			{
+				answer_ += L"void"s += L" returning ";
+				goto start;
+			}
+			bool toExit = false;
+			UnGetToken();
+			while (true)
+			{
+				auto it = std::find(
+					stringToParse_.begin() + curPos_,
+					stringToParse_.end(),
+					L',');
+				if (it == stringToParse_.end())
+				{
+					it = std::find(
+						stringToParse_.begin() + curPos_,
+						stringToParse_.end(),
+						L')');
+					if(it == stringToParse_.end()) throw InvalidBrace();
+					toExit = true;
+				}
+				Cdecl cd{ stringToParse_.substr(curPos_,it - stringToParse_.begin()) };
+				cd.Start();
+				answer_ += cd.GetAnswer();
+				if (toExit == true) break;
+				//curPos_ += (it - stringToParse_.begin());
+			}
+			answer_ += L" returning ";
+			//if (curTokenType_ != TokenType::kRightBrace) throw InvalidBrace();
 			goto start;
 		}
 		else UnGetToken();

@@ -38,7 +38,8 @@ public:
 		kBrackets,
 		kStar,
 		kLeftBrace,
-		kRightBrace
+		kRightBrace,
+		kComma
 	};
 	void Start();
 	std::wstring GetAnswer();
@@ -50,9 +51,9 @@ private:
 	void UnGetToken();
 	TokenType GetType(const std::wstring& token);
 	std::wstring GetTypeName();
-	bool ParsePointer();
-	void ParseDeclarator();
-	void ParseDirectDeclarator();
+	bool ParsePointer(std::wstring& str);
+	void ParseDeclarator(bool isAbstract);
+	void ParseDirectDeclarator(bool isAbstract);
 	
 	/*(6.7.5) declarator : 
 			pointeropt direct - declarator
