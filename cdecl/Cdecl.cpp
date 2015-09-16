@@ -48,16 +48,14 @@ Cdecl::Cdecl(std::wstring str)
 void Cdecl::Start(bool isAbstract)
 {
 	dataType_.push_back(GetTypeName());
-	++nowDataTypeIndex_;
 	ParseDeclarator(isAbstract);
 }
 
 std::wstring Cdecl::GetAnswer(bool isAbstract)
 {
-	auto ret = (isAbstract ? L""s : (dataName_ + L" is"s))+ answer_ + L" "s + dataType_[nowDataTypeIndex_ - 1];
-	if (nowDataTypeIndex_ != 1)
+	auto ret = (isAbstract ? L""s : (dataName_ + L" is"s))+ answer_ + L" "s + dataType_.back();
+	if (dataType_.size() > 1)
 	{
-		--nowDataTypeIndex_;
 		dataType_.pop_back();
 	}
 	return ret;
@@ -65,7 +63,7 @@ std::wstring Cdecl::GetAnswer(bool isAbstract)
 
 void Cdecl::SkipSpace()
 {
-	while (iswspace(stringToParse_[curPos_]))
+	while (std::iswspace(stringToParse_[curPos_]))
 	{
 		++curPos_;
 	}
@@ -265,7 +263,6 @@ void Cdecl::ParseDirectDeclarator(bool isAbstract)
 				else if (curTokenType_ != TokenType::kComma) throw InvalidSyntax();
 			}
 			answer_ += L" returning ";
-			//if (curTokenType_ != TokenType::kRightBrace) throw InvalidBrace();
 			goto start;
 		}
 		else UnGetToken();

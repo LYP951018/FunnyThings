@@ -6,24 +6,30 @@
 #include <vector>
 #include <exception>
 
-struct InvalidTypeName :std::exception
-{
-	InvalidTypeName()
-		:exception("invalid type name !")
-	{}
-};
 
-struct InvalidBrace : std::exception
-{
-	InvalidBrace()
-		:exception("invalid brace!")
-	{}
-};
 
 struct InvalidSyntax : std::exception
 {
 	InvalidSyntax()
 		:exception("Invalid syntax!")
+	{}
+
+	InvalidSyntax(const char* str)
+		:exception(str)
+	{}
+};
+
+struct InvalidTypeName :InvalidSyntax
+{
+	InvalidTypeName()
+		:InvalidSyntax("invalid type name !")
+	{}
+};
+
+struct InvalidBrace : InvalidSyntax
+{
+	InvalidBrace()
+		:InvalidSyntax("invalid brace!")
 	{}
 };
 class Cdecl
@@ -55,15 +61,7 @@ private:
 	bool ParsePointer(std::wstring& str);
 	void ParseDeclarator(bool isAbstract);
 	void ParseDirectDeclarator(bool isAbstract);
-	
-	/*(6.7.5) declarator : 
-			pointeropt direct - declarator
-		
-		
-	
-		(6.7.5) parameter - type - list :
-			parameter - list
-			parameter - list, ...*/
+
 	static const std::wstring TypeQualifierName[3];
 	static const std::wstring TypeSpecifierName[14];
 	static std::unordered_map<std::wstring, TokenType> symbolTable;
@@ -75,6 +73,5 @@ private:
 	std::wstring dataName_;
 	std::vector<std::wstring> dataType_;
 	std::wstring curToken_;
-	std::size_t nowDataTypeIndex_{};
 	TokenType curTokenType_{};
 };
