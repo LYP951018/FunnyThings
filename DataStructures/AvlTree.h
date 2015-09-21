@@ -77,6 +77,7 @@ class AvlTree
 public:
 	using NodeType = AvlTreeNode<ObjectT>;
 	using NodePointer = NodeType*;
+	using ConstNodePointer = typename NodeType::ConstPointer;
 	using TreeType = AvlTree<ObjectT>;
 	using HeightType = typename NodeType::HeightType;
 	using BalanceFactorType = typename NodeType::BalanceFactorType;
@@ -84,7 +85,30 @@ public:
 
 	static_assert(!std::is_same<ObjectT, NodePointer>::value, "NodePointer has the same type with ObjectT");
 
-	AvlTree() = default;
+	AvlTree() noexcept = default;
+
+	AvlTree(const AvlTree& rhs)
+	{
+		treeHead_ = CopyEntireTree(rhs.treeHead_);
+	}
+
+	AvlTree(AvlTree&& rhs) noexcept
+		:treeHead_(rhs.treeHead_)
+	{
+		rhs.treeHead_ = nullptr;
+	}
+
+	AvlTree& operator=(const AvlTree& rhs)
+	{
+		AvlTree(rhs).Swap(*this);
+		return *this;
+	}
+
+	AvlTree& operator=(AvlTree&& rhs) noexcept
+	{
+		AvlTree(std::move(rhs)).Swap(*this);
+		return *this;
+	}
 
 	~AvlTree()
 	{
@@ -124,18 +148,24 @@ public:
 		treeHead_ = RemoveImp(treeHead_, v);
 	}
 
+	void Swap(AvlTree& rhs)
+	{
+		std::swap(treeHead_, rhs.treeHead_);
+	}
+	
+private:
+
 	NodePointer Remove(NodePointer p)
 	{
 		auto l = NodeType::LeftChild(p);
 		auto r = NodeType::RightChild(p);
-		if (r == nullptr) return l;
-		auto minNode = GetMininum(p);
-		NodeType::LeftChild(minNode) = l;
-		NodeType::RightChild(minNode) = RemoveMin(r);
 		delete p;
+		if (r == nullptr) return l;
+		auto minNode = GetMininum(r);
+		NodeType::RightChild(minNode) = RemoveMin(r);
+		NodeType::LeftChild(minNode) = l;
 		return Balance(minNode);
 	}
-private:
 
 	NodePointer RemoveImp(NodePointer p, const ValueType& v)
 	{
@@ -170,12 +200,12 @@ private:
 		return Balance(p);
 	}
 
-	static HeightType GetHeight(const NodePointer p)
+	static HeightType GetHeight(ConstNodePointer p)
 	{
 		return p ? NodeType::Height(p) : 0;
 	}
 
-	static BalanceFactorType GetBalanceFactor(const NodePointer p)
+	static BalanceFactorType GetBalanceFactor(ConstNodePointer p)
 	{
 		return GetHeight(NodeType::RightChild(p)) - GetHeight(NodeType::LeftChild(p));
 	}
@@ -241,5 +271,20 @@ private:
 		return p;
 	}
 
+	static NodePointer CopyEntireTree(ConstNodePointer root)
+	{
+		if (root == nullptr) return nullptr;
+		auto node = NodeType::AllocateNode(NodeType::Value(root));
+		NodeType::LeftChild(node) = CopyEntireTree(NodeType::LeftChild(root));
+		NodeType::RightChild(node) = CopyEntireTree(NodeType::RightChild(root));
+		return node;
+	}
+
 	NodePointer treeHead_ = nullptr;
 };
+
+template<typename ObjectT>
+void swap(AvlTree<ObjectT>& lhs, AvlTree<ObjectT>& rhs)
+{
+	lhs.Swap(rhs);
+}
