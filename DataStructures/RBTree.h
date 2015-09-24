@@ -323,9 +323,9 @@ private:
 		//      /\          /\              /\
 		//     A  cur	   A  s            p  cur
 		//        /\	->    /\     ->    /\  /\
-		//       s  D          B  cur     A B C D
+		//       s  D        B cur        A B C D
 		//      /\             /\
-		//	    B C           C  D
+		//     B  C           C  D
 
 
 		p->links_[!dir] = SingleRotate(p->links_[!dir], !dir);
