@@ -148,7 +148,7 @@ public:
 		treeHead_ = RemoveImp(treeHead_, v);
 	}
 
-	void Swap(AvlTree& rhs)
+	void Swap(AvlTree& rhs) noexcept
 	{
 		std::swap(treeHead_, rhs.treeHead_);
 	}
@@ -284,7 +284,7 @@ private:
 };
 
 template<typename ObjectT>
-void swap(AvlTree<ObjectT>& lhs, AvlTree<ObjectT>& rhs)
+void swap(AvlTree<ObjectT>& lhs, AvlTree<ObjectT>& rhs) noexcept
 {
 	lhs.Swap(rhs);
 }

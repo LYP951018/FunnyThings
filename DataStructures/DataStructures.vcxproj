@@ -119,6 +119,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AvlTree.h" />
+    <ClInclude Include="RBTree.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp" />
