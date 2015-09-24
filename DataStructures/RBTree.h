@@ -94,7 +94,7 @@ public:
 				{
 					//Color Flip
 					//  1,E <--parent            1,E
-					//	 \                         \
+					//    \                         \
 					//   3,B <--cur      ->        3,R					
 					//   / \                       / \
 					// 2,R 4,R                   2,B 4,B
