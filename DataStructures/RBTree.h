@@ -248,7 +248,7 @@ public:
 								}
 								else if (IsRed(s->links_[!last]))
 								{
-									//      	2,R          1,R
+									//          2,R          1,R
 									//          / \          / \
 									//        1,B  3,B  ->  0,B 2,B
 									//       /                \
