@@ -93,10 +93,10 @@ public:
 				else if (IsRed(cur->links_[0]) && IsRed(cur->links_[1]))
 				{
 					//Color Flip
-					//	1,E <--parent             1,E
+					//  1,E <--parent            1,E
 					//	 \                         \
-					//	 3,B <--cur      ->       3,R					
-					//	 / \                       / \
+					//   3,B <--cur      ->        3,R					
+					//   / \                       / \
 					// 2,R 4,R                   2,B 4,B
 
 					cur->isRed_ = true;
@@ -119,26 +119,26 @@ public:
 					if (cur == parent->links_[last])
 					{
 						//	Single Rotation
-						//		0,B <--g                 1,B
-						//		 \                       / \
-						//		 1,R <--p              0,R 3,R
-						//		  \           ->           / \
-						//		  3,R <--q               2,B 4,B
-						//		  / \
-						//		2,B 4,B
+						//     0,B <--g                 1,B
+						//       \                      / \
+						//       1,R <--p              0,R 3,R
+						//         \          ->            / \
+						//         3,R <--q               2,B 4,B
+						//         / \
+						//       2,B 4,B
 						grandNodeFather->links_[dir2] = SingleRotate(grandNode, !last);
 					}
 					else
 					{
 
 					//	Double Rotation
-					//		0,B <--g                 2,B
-					//		  \                      / \
-					//		  4,R <--p             0,R 4,R
-					//		  /             ->       \  /
-					//		2,R <--q                1,B 3,B
-					//		/ \
-					//	  1,B 3,B
+					//      0,B <--g                 2,B
+					//        \                      / \
+					//        4,R <--p             0,R 4,R
+					//        /             ->       \  /
+					//       2,R <--q                1,B 3,B
+					//      / \
+					//    1,B 3,B
 						grandNodeFather->links_[dir2] = DoubleRotate(grandNode, !last);
 					}
 				}
@@ -198,24 +198,24 @@ public:
 				{
 					if (IsRed(cur->links_[!dir]))
 					{
-						//   1,B---cur		 0,B 
-						//	/	\---dir			\
-						// 0,R  2,B  ->			1,R----cur
-						//						  \
-						//						  2,B
+						//   1,B---cur        0,B 
+						//	/   \---dir         \
+						// 0,R  2,B  ->         1,R----cur
+						//                        \
+						//                        2,B
 						parent = parent->links_[last] = SingleRotate(cur, dir);
 
-						//		0,B ---parent
-						//		 \
-						//		 1,R----cur
-						//	      \
-						//	  	  2,B
+						//     0,B ---parent
+						//      \
+						//      1,R----cur
+						//        \
+						//        2,B
 					}
 					else /*if (!IsRed(cur->links_[!dir]))*/
 					{
-						//	1,R->p			1,B
-						//	/ \      ->		/ \
-						//0,B 2,B->cur	  0,R 2,R\
+						//	1,R->p          1,B
+						//	/ \     ->      / \
+						//0,B 2,B->cur    0,R 2,R
 
 						//The first case is a simple reverse color flip. 
 						//If a node and it's sibling are black, and all four of their children are black, 
@@ -239,9 +239,9 @@ public:
 								auto dir2 = grandNode->links_[1] == parent;
 								if (IsRed(s->links_[last]))
 								{
-									//      	2,R----p       1,R
+									//           2,R----p      1,R
 									//      	/ \----last	   / \
-									// s----  0,B 3,B-cur  ->   0,B  2,B
+									// s----  0,B 3,B-cur  ->    0,B  2,B
 									//         \                   \
 									//         1,R                 3,R
 									grandNode->links_[dir2] = DoubleRotate(parent, last);
@@ -250,8 +250,8 @@ public:
 								{
 									//      	2,R          1,R
 									//      	/ \			 / \
-									//       1,B  3,B  ->	0,B 2,B
-									//       /				 \
+									//        1,B  3,B  ->  0,B 2,B
+									//       /                \
 									//		0,R              3,R
 									grandNode->links_[dir2] = SingleRotate(parent, last);
 								}
@@ -297,11 +297,11 @@ private:
 	//dir: 0 left 1 right
 	static NodePointer SingleRotate(NodePointer p, std::uint8_t dir)
 	{
-		//		 p							cur
+		//       p                          cur
 		//		/\							/\
-		//     cur C    left <-> right      A cur
-		//	   /\						      /\
-		//    A  B						     B C
+		//     cur C   left <-> right      A cur
+		//	   /\                             /\
+		//    A  B                            B C
 
 		YPASSERT(dir == 0 || dir == 1, "Invalid direction.");
 		auto temp = p->links_[!dir];
@@ -319,11 +319,11 @@ private:
 	{
 
 		//left:
-		//		 p			 p              s
-		//		/\			/\              /\
+		//      p			 p              s
+		//      /\          /\              /\
 		//     A  cur	   A  s            p  cur
-		//	      /\	->	  /\	->    /\  /\
-		//       s D         B  cur      A B C D
+		//        /\	->    /\     ->    /\  /\
+		//      s D         B  cur        A B C D
 		//		/\	            /\
 		//	    B C            C  D
 
