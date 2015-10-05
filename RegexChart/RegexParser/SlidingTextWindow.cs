@@ -22,6 +22,7 @@ namespace RegexChart.RegexParser
         public void AdvanceChar(int n)
         {
             _offset += n;
+            Debug.Assert(_offset >= 0 && _offset < _sourceText.Length);
         }
 
         public char PeekChar()
@@ -78,6 +79,22 @@ namespace RegexChart.RegexParser
             }
             AdvanceChar(length);
             return true;
+        }
+
+        public bool AdvanceIfOneOf(string seq,out char ans)
+        {
+            var c = PeekChar();
+            foreach(var c2 in seq)
+            {
+                if(c == c2)
+                {
+                    AdvanceChar();
+                    ans = c;
+                    return true;
+                }
+            }
+            ans = default(char);
+            return false;
         }
 
         public bool AdvanceIfPositiveInteger(out int result)

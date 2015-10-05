@@ -56,6 +56,7 @@ namespace RegexChart.RegexParser
 
         }
 
+        //be responsible for ^ $ . \b(etc.) [a-z] and any character
         public Expression ParseCharSet()
         {        
             if (_sourceWindow.PeekChar() == SlidingTextWindow.InvalidCharacter)
@@ -148,13 +149,13 @@ namespace RegexChart.RegexParser
                 return exp;
             }
             //stuff like [a-z]
-            else if(_sourceWindow.AdvanceIfMatches('['))
+            else if (_sourceWindow.AdvanceIfMatches('['))
             {
                 var exp = new CharSetExpression();
                 exp.IsReverse = _sourceWindow.AdvanceIfMatches('^');
                 bool midState = false;
                 char lhs = default(char), rhs = default(char);
-                while(true)
+                while (true)
                 {
                     if (_sourceWindow.AdvanceIfMatches('\\') || _sourceWindow.AdvanceIfMatches('/'))
                     {
@@ -205,10 +206,10 @@ namespace RegexChart.RegexParser
                     }
                     else if (_sourceWindow.AdvanceIfMatches("-]"))
                         throw new ArgumentException("-] occurred.");
-                    else 
+                    else
                     {
                         var c2 = _sourceWindow.NextChar();
-                        if(_sourceWindow.IsValid(c2))
+                        if (_sourceWindow.IsValid(c2))
                         {
                             if (midState)
                                 rhs = c2;
@@ -226,29 +227,221 @@ namespace RegexChart.RegexParser
                             throw new ArgumentException();
                         break;
                     }
-                    else if(_sourceWindow.AdvanceIfMatches('-'))
+                    else if (_sourceWindow.AdvanceIfMatches('-'))
                     {
                         if (!midState)
                             throw new ArgumentException("Invalid - in []");
-                    }   
+                    }
                     else
                     {
                         var c2 = _sourceWindow.NextChar();
-                        if(_sourceWindow.IsValid(c2))
+                        if (_sourceWindow.IsValid(c2))
                         {
                             if (midState)
                             {
                                 rhs = lhs;
                             }
                             if (exp.AddRangeWithConflict(lhs, rhs))
-                                    midState = false;
+                                midState = false;
                             else throw new ArgumentException();
-                            
+
                         }
                     }
                 }
+                return exp;
             }
-                
+            else
+            {
+                char c = default(char);
+                if (_sourceWindow.AdvanceIfOneOf("()+*?{}|",out c))
+                {
+                    _sourceWindow.AdvanceChar(-1);
+                    return null;
+                }
+                else
+                {
+                    //the character itself
+                    var exp = new CharSetExpression();
+                    exp.IsReverse = false;
+                    exp.Add(_sourceWindow.NextChar());
+                    return exp;
+                }    
+            }
+
+            
+        }
+
+        public Expression ParseUnit()
+        {
+            //first,find the loop part
+            var unit = ParseCharSet();
+            if(unit == null)
+            {
+                unit = ParseFunction();
+            }
+            if (unit == null) return null;
+            //then,loop
+            LoopExpression loop;
+            while(true)
+            {
+                loop = ParseLoop();
+                if (loop == null) break;
+                loop.Looped = unit;
+                unit = loop;
+            }
+            return unit;
+        }
+
+        public Expression ParseJoin()
+        {
+            var left = ParseUnit();
+            while(true)
+            {
+                var right = ParseUnit();
+                if (right != null)
+                {
+                    var seqExpression = new SequenceExpression(left,right);                   
+                    left = seqExpression;
+                }
+                else break;
+            }
+            return left;
+        }
+
+        public Expression ParseOr()
+        {
+            var left = ParseJoin();
+            while(true)
+            {
+                if (_sourceWindow.AdvanceIfMatches('|'))
+                {
+                    var right = ParseJoin();
+                    if (right == null)
+                    {
+                        throw new ArgumentException("Expect expression after |.");
+                    }
+                    var seq = new SequenceExpression(left, right);
+                    left = seq;
+                }
+                else break;
+            }
+            return left;
+        }
+
+        public Expression ParseExpression()
+        {
+            return ParseOr();
+        }
+
+        Expression ParseFunction()
+        {
+            if (_sourceWindow.AdvanceIfMatches("(="))
+            {
+                var sub = ParseExpression();
+                if (!_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost");
+                }
+                var exp = new PositiveExpression(sub);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches("(!"))
+            {
+                var sub = ParseExpression();
+                if (!_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost");
+                }
+                var exp = new NegativeExpression(sub);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches("(<&"))
+            {
+                //表达式引用
+                string name;
+                if (!_sourceWindow.AdvanceIfName(out name))
+                {
+                    throw new ArgumentException("invalid name.");
+                }
+                if (!_sourceWindow.AdvanceIfMatches('>'))
+                {
+                    throw new ArgumentException("> lost.");
+                }
+                if (!_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost.");
+                }
+                var exp = new ReferenceExpression(name);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches("(<$"))
+            {
+                string name;
+                int index = -1;
+                if (_sourceWindow.AdvanceIfName(out name))
+                {
+                    if (_sourceWindow.AdvanceIfMatches(';'))
+                    {
+                        if (!_sourceWindow.AdvanceIfPositiveInteger(out index))
+                        {
+                            throw new ArgumentException("Positive numbers required after ;");
+                        }
+                    }
+                }
+                else if (!_sourceWindow.AdvanceIfPositiveInteger(out index))
+                {
+                    throw new ArgumentException("Positive numbers required after (<$");
+                }
+                if (!_sourceWindow.AdvanceIfMatches('>'))
+                {
+                    throw new ArgumentException("> lost.");
+                }
+                if (!_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost.");
+                }
+                var exp = new MatchExpression(name, index);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches("(<"))
+            {
+                string name;
+                if (!_sourceWindow.AdvanceIfName(out name))
+                {
+                    throw new ArgumentException("Name lost");
+                }
+                if (!_sourceWindow.AdvanceIfMatches('>'))
+                {
+                    throw new ArgumentException("> lost");
+                }
+                var sub = ParseExpression();
+                if (_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost");
+                }
+                var exp = new CaptureExpression(name, sub);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches("(?"))
+            {
+                var sub = ParseExpression();
+                if (_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost");
+                }
+                var exp = new CaptureExpression(sub);
+                return exp;
+            }
+            else if (_sourceWindow.AdvanceIfMatches('('))//subexpression
+            {
+                var exp = ParseExpression();
+                if (!_sourceWindow.AdvanceIfMatches(')'))
+                {
+                    throw new ArgumentException(") lost");
+                }
+                return exp;
+            }
+            else return null;
         }
     }
 }

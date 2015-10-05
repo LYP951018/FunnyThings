@@ -62,6 +62,12 @@ namespace RegexChart.RegexParser
     {
         public Expression Left { get; set; }
         public Expression Right { get; set; }
+
+        public SequenceExpression(Expression left,Expression right)
+        {
+            Left = left;
+            Right = right;
+        }
     }
 
     public class BeginExpression : Expression
@@ -77,27 +83,67 @@ namespace RegexChart.RegexParser
     public class CaptureExpression : Expression
     {
         public string Name { get; set; }
-        public int Index { get; set; }
+        public Expression Sub { get; set; }
+
+        public CaptureExpression(string name, Expression sub)
+        {
+            Name = name;
+            Sub = sub;
+        }
+
+        //匿名
+        public CaptureExpression(Expression sub)
+        {
+            Name = null;       
+            Sub = sub;
+        }
     }
 
     public class PositiveExpression : Expression
     {
         public Expression Matched { get; set; }
+
+        public PositiveExpression(Expression subExpression)
+        {
+            Matched = subExpression;
+        }
     }
 
     public class NegativeExpression : Expression
     {
         public Expression Matched { get; set; }
+
+        public NegativeExpression(Expression subExpression)
+        {
+            Matched = subExpression;
+        }
     }
 
     public class ReferenceExpression : Expression
     {
         public string Name { get; set; }
+
+        public ReferenceExpression(string name)
+        {
+            Name = name;
+        }
     }
 
     public class RegexExpression
     {
 
+    }
+
+    public class MatchExpression : Expression
+    {
+        public string Name { get; set; }
+        public int Index { get; set; }
+
+        public MatchExpression(string name,int index)
+        {
+            Name = name;
+            Index = index;
+        }
     }
 
 }
