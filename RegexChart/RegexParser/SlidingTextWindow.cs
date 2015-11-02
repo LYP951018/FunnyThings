@@ -11,8 +11,15 @@ namespace RegexChart.RegexParser
     {
         public const char InvalidCharacter = char.MaxValue;
 
+        public int Pos => _offset;
+
         private int _offset;
         private string _sourceText;
+
+        public SlidingTextWindow(string source)
+        {
+            _sourceText = source;
+        }
 
         public void AdvanceChar()
         {
@@ -22,7 +29,7 @@ namespace RegexChart.RegexParser
         public void AdvanceChar(int n)
         {
             _offset += n;
-            Debug.Assert(_offset >= 0 && _offset < _sourceText.Length);
+            Debug.Assert(_offset >= 0 && _offset <= _sourceText.Length);
         }
 
         public char PeekChar()
@@ -34,7 +41,7 @@ namespace RegexChart.RegexParser
 
         public void Reset(int position)
         {
-            Debug.Assert(position < _sourceText.Length, "Invalid position.");
+            Debug.Assert(position <= _sourceText.Length, "Invalid position.");
             _offset = position;
         }
 
@@ -61,7 +68,7 @@ namespace RegexChart.RegexParser
 
         public bool AdvanceIfMatches(char c)
         {
-            if (NextChar() == c)
+            if (PeekChar() == c)
             {
                 AdvanceChar();
                 return true;
@@ -142,6 +149,11 @@ namespace RegexChart.RegexParser
         public bool IsValid(char c)
         {
             return c != InvalidCharacter;
+        }
+
+        public bool HasMoreChars()
+        {
+            return _offset < _sourceText.Length;
         }
     }
 

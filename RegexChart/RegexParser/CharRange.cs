@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
-    public struct CharRange
+    public struct CharRange : IComparable
     {
         public char Begin { get; set; }
         public char End { get; set; }
@@ -43,9 +43,25 @@ namespace RegexChart.RegexParser
             return Equals((CharRange)obj);
         }
 
+        public bool IsOverlapped(CharRange rhs)
+        {
+            return !(this < rhs || this > rhs);
+        }
+
         public bool Equals(CharRange obj)
         {
             return Begin == obj.Begin && End == obj.End;
+        }
+
+        public int CompareTo(object obj)
+        {
+            if (obj == null) return 1;
+            if (ReferenceEquals(this, obj)) return 0;
+            var charObj = (CharRange)obj;
+            if (this.Equals(charObj)) return 0;
+            if (this < charObj) return -1;
+            return 1;
+            
         }
 
         public static bool operator ==(CharRange lhs,CharRange rhs)
@@ -65,7 +81,7 @@ namespace RegexChart.RegexParser
 
         public static bool operator >(CharRange lhs, CharRange rhs)
         {
-            return rhs < lhs;
+            return rhs.End < lhs.Begin;
         }
 
         public static bool operator <=(CharRange lhs, CharRange rhs)

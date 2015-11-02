@@ -35,6 +35,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Msagl.Drawing, Version=3.0.0.0, Culture=neutral, PublicKeyToken=8a3d7c21d5fa1306, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\Drawing\bin\Release\Microsoft.Msagl.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.WpfGraphControl">
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\tools\WpfGraphControl\bin\Release\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -49,14 +56,33 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WPFToolkit.Extended">
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\libs\WPFToolkit.Extended.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.DataGrid">
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\libs\Xceed.Wpf.DataGrid.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.Toolkit">
+      <HintPath>..\..\automatic-graph-layout\GraphLayout\libs\Xceed.Wpf.Toolkit.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="RegexInput.xaml.cs">
+      <DependentUpon>RegexInput.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RegexParser\Automaton.cs" />
     <Compile Include="RegexParser\CharRange.cs" />
+    <Compile Include="RegexParser\CharSetAlgorithm.cs" />
+    <Compile Include="RegexParser\EpsilonNfaAlgorithm.cs" />
+    <Compile Include="RegexParser\ExpressionAlgorithm.cs" />
+    <Compile Include="RegexParser\FlatSet.cs" />
+    <Compile Include="RegexParser\MergeAlgorithm.cs" />
     <Compile Include="RegexParser\Parser.cs" />
+    <Compile Include="RegexParser\RegexNode.cs" />
     <Compile Include="RegexParser\SlidingTextWindow.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -67,11 +93,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="RegexParser\Expression.cs" />
-    <Compile Include="RegexParser\Lexer.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="RegexInput.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

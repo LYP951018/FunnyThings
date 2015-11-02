@@ -19,13 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9BB37806-808F-482F-859C-E025BA105F3C}</ProjectGuid>
-    <RootNamespace>BasicLib</RootNamespace>
+    <ProjectGuid>{5998709E-0C60-4EBC-8C27-9625B59EADFD}</ProjectGuid>
+    <RootNamespace>RuleParser</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
@@ -118,19 +118,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Assert.h" />
-    <ClInclude Include="ComPtr.h" />
-    <ClInclude Include="ReadFile.h" />
-    <ClInclude Include="RuleReader.h" />
-    <ClInclude Include="SlidingTextWindow.h" />
-    <ClInclude Include="StringType.h" />
-    <ClInclude Include="TreeDrawer.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ReadFile.cpp" />
-    <ClCompile Include="SlidingTextWindow.cpp" />
-    <ClCompile Include="StringType.cpp" />
-    <ClCompile Include="TreeDrawer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

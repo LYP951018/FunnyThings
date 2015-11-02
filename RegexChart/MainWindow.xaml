@@ -6,7 +6,18 @@
         xmlns:local="clr-namespace:RegexChart"
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
+    <Grid Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="27"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Menu Grid.Row="0" Height="27" HorizontalAlignment="Stretch" Name="menu1" VerticalAlignment="Top" >
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Regex" Click="RegexMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+        <TextBlock Grid.Row="1" Name="RegexContent" FontSize="20"/>
+        <DockPanel Grid.Row="2" Name="GraphViewPanel"/>
     </Grid>
 </Window>

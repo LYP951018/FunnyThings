@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
-    class Parser
+    public class Parser
     {
         private SlidingTextWindow _sourceWindow;
+
+        public Parser(string source)
+        {
+            _sourceWindow = new SlidingTextWindow(source);
+        }
+
+
         public LoopExpression ParseLoop()
         {
             int min = 0, max = 0;
@@ -35,6 +42,7 @@ namespace RegexChart.RegexParser
                 int result = 0;
                 if (_sourceWindow.AdvanceIfPositiveInteger(out result))
                 {
+                    min = result;
                     if (_sourceWindow.AdvanceIfMatches(','))
                     {
                         if (!_sourceWindow.AdvanceIfPositiveInteger(out max))
@@ -52,7 +60,8 @@ namespace RegexChart.RegexParser
                 else throw new ArgumentException("invalid {}");
             }
             else return null;
-            return new LoopExpression(min, max, _sourceWindow.AdvanceIfMatches('?'));
+            //greedy or not
+            return new LoopExpression(min, max, !_sourceWindow.AdvanceIfMatches('?'));
 
         }
 
@@ -68,7 +77,7 @@ namespace RegexChart.RegexParser
             else if (_sourceWindow.AdvanceIfMatches('.'))
             {
                 var ret = new CharSetExpression();
-                ret.Add(char.MinValue, (char)(char.MaxValue - 1));
+                ret.Add((char)1,char.MaxValue);
                 return ret;
             }
             else if (_sourceWindow.AdvanceIfMatches('\\') || _sourceWindow.AdvanceIfMatches('/'))
@@ -308,7 +317,7 @@ namespace RegexChart.RegexParser
             return left;
         }
 
-        public Expression ParseOr()
+        public Expression ParseAlternate()
         {
             var left = ParseJoin();
             while(true)
@@ -320,7 +329,7 @@ namespace RegexChart.RegexParser
                     {
                         throw new ArgumentException("Expect expression after |.");
                     }
-                    var seq = new SequenceExpression(left, right);
+                    var seq = new AlternativeExpression(left, right);
                     left = seq;
                 }
                 else break;
@@ -330,7 +339,7 @@ namespace RegexChart.RegexParser
 
         public Expression ParseExpression()
         {
-            return ParseOr();
+            return ParseAlternate();
         }
 
         Expression ParseFunction()
@@ -415,7 +424,7 @@ namespace RegexChart.RegexParser
                     throw new ArgumentException("> lost");
                 }
                 var sub = ParseExpression();
-                if (_sourceWindow.AdvanceIfMatches(')'))
+                if (!_sourceWindow.AdvanceIfMatches(')'))
                 {
                     throw new ArgumentException(") lost");
                 }
@@ -442,6 +451,124 @@ namespace RegexChart.RegexParser
                 return exp;
             }
             else return null;
+        }
+
+        RegexExpression ParseRegexExpression(string source)
+        {
+            var regex = new RegexExpression();
+            try
+            {
+                while(_sourceWindow.AdvanceIfMatches("(<#"))
+                {
+                    string name;
+                    if(!_sourceWindow.AdvanceIfName(out name))
+                    {
+                        throw new ArgumentException("Identifier lost.");
+                    }
+                    if(!_sourceWindow.AdvanceIfMatches('>'))
+                    {
+                        throw new ArgumentException("> lost.");
+                    }
+                    var sub = ParseExpression();
+                    if(!_sourceWindow.AdvanceIfMatches(')'))
+                    {
+                        throw new ArgumentException(") needed");
+                    }
+                    if(regex.Definitions.Keys.Contains(name))
+                    {
+                        throw new ArgumentException("name duplicated.");
+                    }
+                    else
+                    {
+                        regex.Definitions.Add(name, sub);
+                    }
+                }
+                regex.Main = ParseExpression();
+                if(regex.Main == null)
+                {
+                    throw new ArgumentException("Expression Expected.");
+                }
+                if(_sourceWindow.HasMoreChars())
+                {
+                    throw new ArgumentException("Syntax error.");
+                }
+                return regex;
+            }
+            catch(ArgumentException e)
+            {
+                //...
+                throw new ArgumentException(e.Message);
+            }
+        }
+
+        //make \r-> \\r
+        string EscapeTextForRegex(string literalString)
+        {
+            var sb = new StringBuilder(literalString.Length);
+            foreach(var c in literalString)
+            {
+                switch(c)
+                {
+                    case '\\':case '/':case '(':case ')':case '+':case '*':case '?':case '|':
+				    case '{':case '}':case '[':case ']':case '<':case '>':
+				    case '^':case '$':case '!':case '=':
+                        sb.Append('\\').Append(c);
+                        break;
+                    case '\r':
+                        sb.Append("\\r");
+                        break;
+                    case '\n':
+                        sb.Append("\\n");
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        break;
+                    default:
+                        sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+
+        //\\r->\r
+        string UnescapeTextForRegex(string escapedText)
+        {
+            var sb = new StringBuilder(escapedText.Length);
+            int i = 0;
+            char c;
+            while(true)
+            {
+                if (i >= escapedText.Length) break;
+                c = escapedText[i];
+                if (c == '\\' || c == '/')
+                {
+                    if (i + 1 < escapedText.Length)
+                    {
+                        ++i;
+                        c = escapedText[i];
+                        switch (c)
+                        {
+                            case 'r':
+                                sb.Append('\r');
+                                break;
+                            case 'n':
+                                sb.Append('\n');
+                                break;
+                            case 't':
+                                sb.Append('\t');
+                                break;
+                            default:
+                                sb.Append(c);
+                                break;
+                        }
+                        continue;
+                    }
+                }
+                sb.Append(c);
+                ++i;
+            }
+            return sb.ToString();
         }
     }
 }
