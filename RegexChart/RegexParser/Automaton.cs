@@ -51,6 +51,16 @@ namespace RegexChart.RegexParser
         {
 
         }
+        
+        public Transition(Transition transition)
+        {
+            Start = transition.Start;
+            End = transition.End;
+            Range = transition.Range;
+            TransitionType = transition.TransitionType;
+            Capture = transition.Capture;
+            Index = transition.Index;
+        }
 
         public Transition(State start, State end, Type transitionType)
             : this(start, end, default(CharRange), transitionType, 0, 0)
@@ -99,7 +109,7 @@ namespace RegexChart.RegexParser
             return string.Empty;
         }
 
-        //static Automaton RemoveEpsilon(Automaton source)
+       
     }
 
     public class State
@@ -132,11 +142,21 @@ namespace RegexChart.RegexParser
             return ret;
         }
 
+        public void AddState(State state)
+        {
+            States.Add(state);
+        }
+
         private void AddInternal(State start, State end, Transition transition)
         {
             start.Output.Add(transition);
             end.Input.Add(transition);
             Transitions.Add(transition);
+        }
+
+        public void AddTransition(Transition transition)
+        {
+            AddInternal(transition.Start, transition.End, transition);
         }
 
         public Transition AddTransition(State start, State end, Transition.Type transitionType)
@@ -165,6 +185,75 @@ namespace RegexChart.RegexParser
             var transition = new Transition(start, end, range);
             AddInternal(start, end, transition);
             return transition;
+        }
+
+        public static Automaton RemoveEpsilon(Automaton source)
+        {
+            //标记所有输入的边都没有消耗字符的状态
+            //TODO: copy captured names
+            List<Transition> transitions = new List<Transition>();
+            var oldToNew = new Dictionary<State, State>();
+            var newToOld = new Dictionary<State, State>();
+            var nfa = new Automaton();
+            var epsilonStates = new List<State>();
+            var newStartstate = nfa.AddState();
+            oldToNew.Add(source.StartState, newStartstate);
+            newToOld.Add(newStartstate, source.StartState);
+            nfa.StartState = newStartstate;
+            
+            for(int i = 0;i < nfa.States.Count;++i)
+            {
+                var state = nfa.States[i];
+                var oldState = newToOld[state];
+                FindPath(oldState, state, transitions, epsilonStates);
+                foreach(var trans in transitions)
+                {
+                    var target = trans.End;
+                    if(!oldToNew.Keys.Contains(target))
+                    {
+                        var newState = nfa.AddState();
+                        if (state.IsFinalState) newState.IsFinalState = true;
+                        oldToNew.Add(target, newState);
+                        newToOld.Add(newState, target);
+                    }
+                    var newTransition = new Transition(trans);
+                    newTransition.Start = state;
+                    newTransition.End = oldToNew[target];
+                    nfa.AddTransition(newTransition);
+                }
+                transitions.Clear();
+                epsilonStates.Clear();
+            }
+            return nfa;
+        }
+
+        public static bool IsConsume(Transition transition)
+        {
+            var type = transition.TransitionType;
+            return type != Transition.Type.Epsilon ;
+        }
+
+        public static void FindPath(State source,State target,List<Transition> transitions,List<State> epsilonStates)
+        {
+            if(!epsilonStates.Contains(source))
+            {
+                epsilonStates.Add(source);
+                foreach(var t in source.Output)
+                {
+                    if(!IsConsume(t))
+                    {
+                        if(!epsilonStates.Contains(t.End))
+                        {
+                            if (t.End.IsFinalState) target.IsFinalState = true;
+                            FindPath(t.End, target, transitions, epsilonStates);
+                        }
+                    }
+                    else
+                    {
+                        transitions.Add(t);
+                    }
+                }
+            }
         }
     }
 

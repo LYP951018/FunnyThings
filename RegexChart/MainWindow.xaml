@@ -15,7 +15,9 @@
         <Menu Grid.Row="0" Height="27" HorizontalAlignment="Stretch" Name="menu1" VerticalAlignment="Top" >
             <MenuItem Header="_File">
                 <MenuItem Header="_New Regex" Click="RegexMenuItem_Click"/>
-            </MenuItem>
+                <MenuItem Header="Show Epsilon NFA" Click="EpsilonNFA_Click"/>
+                <MenuItem Header="Show NFA" Click="NFA_Click"/>
+                </MenuItem>
         </Menu>
         <TextBlock Grid.Row="1" Name="RegexContent" FontSize="20"/>
         <DockPanel Grid.Row="2" Name="GraphViewPanel"/>
