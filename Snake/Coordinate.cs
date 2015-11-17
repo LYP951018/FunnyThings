@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Snake
+﻿namespace Snake
 {
     public struct Coordinate
     {
@@ -17,15 +11,15 @@ namespace Snake
             Y = y;
         }
 
+        public override int GetHashCode()
+        {
+            return (X.GetHashCode() + Y.GetHashCode()).GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             if (this.GetType() != obj.GetType()) return false;
             return Equals((Coordinate)obj);
-        }
-
-        public bool IsEmpty()
-        {
-            return X == 0 && Y == 0;
         }
 
         public bool Equals(Coordinate rhs)

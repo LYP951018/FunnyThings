@@ -1,14 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using static Snake.SearchResource;
 
 namespace Snake
@@ -94,52 +87,6 @@ namespace Snake
             return state;
         }
 
-        public bool UpdateTailDistance(Coordinate target,Coordinate end)
-        {
-            Queue<Coordinate> queue = new Queue<Coordinate>();
-            queue.Enqueue(target);
-            SearchResource.Clear();
-            var tailDistance = new int[GridWidth, GridHeight];
-            //VisitedGraph[target.X, target.Y] = true;
-            bool isFound = false;
-            while (queue.Count != 0)
-            {
-                var c = queue.Dequeue();
-                if (VisitedGraph[c.X, c.Y]) continue;
-                VisitedGraph[c.X, c.Y] = true;
-
-                for (int i = 0; i < 4; ++i)
-                {
-                    var co = new Coordinate()
-                    {
-                        X = c.X + XDirections[i],
-                        Y = c.Y + YDirections[i]
-                    };
-                    if (CouldMove(co))
-                    {
-                        if (co == target)
-                        {
-                            isFound = true;
-                            //break;
-                        }
-                        if(Graph[co.X,co.Y] != GridState.Snake)
-                        {
-                            if (tailDistance[c.X, c.Y] + 1 < tailDistance[co.X, co.Y])
-                            {
-                                tailDistance[co.X, co.Y] = tailDistance[c.X, c.Y] + 1;
-                            }
-                            if (!VisitedGraph[co.X, co.Y])
-                            {
-                                queue.Enqueue(co);
-                            }
-                        }                     
-                    }
-
-                }
-            }
-            return isFound;
-        }
-
         public List<Coordinate> BfsSearch(Coordinate start, Coordinate end)
         {
             Queue<Coordinate> queue = new Queue<Coordinate>();
@@ -180,7 +127,7 @@ namespace Snake
         private void Dfs(List<List<Coordinate>> list,
             List<Coordinate> nowList,Coordinate now,int count)
         {
-            if (count == 15) return;
+            if (count == DfsDepth) return;
             if(now == Tail)
             {
                 list.Add(CopyList(nowList));
@@ -210,15 +157,15 @@ namespace Snake
         }
 
 
-        private Coordinate? FindLongestPath2(Coordinate target, Coordinate start)
+        private Coordinate? FindLongestPath(Coordinate target, Coordinate start)
         {
-            List<List<Coordinate>> list = new List<List<Coordinate>>(10000);
+            CandidatePaths.Clear();
             var nowList = new List<Coordinate>();
             SearchResource.Clear();
-            Dfs(list, nowList, start,0);
+            Dfs(CandidatePaths, nowList, start,0);
             int maxLen = 0;
             List<Coordinate> maxList = null;
-            foreach (var l in list)
+            foreach (var l in CandidatePaths)
             {
                 if (l.Count > maxLen)
                 {
@@ -228,34 +175,6 @@ namespace Snake
             }
             if (maxList == null) return null;
             return maxList.First();
-        }
-
-        private Coordinate? FindLongestPath(Coordinate target, Coordinate end)
-        {         
-            if (UpdateTailDistance(target,end))
-            {
-                int maxDistance = 0;
-                Coordinate maxCo = Nothing;
-                for(int i = 0;i < 4;++i)
-                {
-                    var co = new Coordinate()
-                    {
-                        X = end.X + XDirections[i],
-                        Y = end.Y + YDirections[i]
-                    };
-                    if(IsValid(co))
-                    {
-                        if (TailDistance[co.X, co.Y] >= maxDistance)
-                        {
-                            maxCo = co;
-                            maxDistance = TailDistance[co.X, co.Y];
-                        }
-                    }                  
-                }
-                if (maxCo == Nothing) return null;
-                return maxCo;
-            }
-            return null;
         }
 
         static List<T> CopyList<T>(List<T> list)
@@ -287,12 +206,6 @@ namespace Snake
         {
             var state = Graph[coordinate.X, coordinate.Y];
             return state != GridState.Wall && state != GridState.Snake;
-        }
-
-        private bool CouldMove(Coordinate coordinate)
-        {
-            return coordinate.X > 1 && coordinate.X < GridWidth
-                && coordinate.Y > 1 && coordinate.Y < GridHeight;
         }
 
         public LinkedList<Coordinate> SnakeBody => _snakeBody;
@@ -346,7 +259,7 @@ namespace Snake
 
         Coordinate? GetTailPath()
         {
-            return FindLongestPath2(Tail, Head);
+            return FindLongestPath(Tail, Head);
         }
 
         private bool Wander()
@@ -409,19 +322,16 @@ namespace Snake
 
         private GridState? Normal()
         {
-           
-                var path = GetTheSafePath();
-                if(path == null)
-                {
-                    return FollowTail();
-                }
-                else
-                {
-                    CurrentDirection = GetDirection(Head, path.Value);
-                    return Move();
-                }
-            
-            
+            var path = GetTheSafePath();
+            if (path == null)
+            {
+                return FollowTail();
+            }
+            else
+            {
+                CurrentDirection = GetDirection(Head, path.Value);
+                return Move();
+            }
         }
 
         private GridState? FollowTail()
@@ -450,25 +360,11 @@ namespace Snake
         }
 
         public GridState[,] Graph => _graph;
-
         private GridState[,] _graph;
         public static readonly Brush SnakeBrush = Brushes.SkyBlue;
-        public Coordinate Tail
-        {
-            get
-            {
-                return _snakeBody.Last.Value;
-            }
-        }
-        public Coordinate Head
-        {
-            get
-            {
-                return _snakeBody.First.Value;
-            }
-        }
+        public Coordinate Tail => _snakeBody.Last.Value;
+        public Coordinate Head => _snakeBody.First.Value;
         private Direction _currentDirection = Direction.Up;
-        private int[,] _distanceGraph = new int[GridWidth,GridHeight];
         private LinkedList<Coordinate> _snakeBody = new LinkedList<Coordinate>();
         public Coordinate EggPos { get; set; }
         private bool _maybeLoop = false, _isLooping = false;

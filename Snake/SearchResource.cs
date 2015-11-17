@@ -17,6 +17,8 @@ namespace Snake
         static public readonly Coordinate Nothing = new Coordinate(-1, -1);
         static public int[,] TailDistance = new int[GridWidth, GridHeight];
         static public Random RandomGen = new Random();
+        static public List<List<Coordinate>> CandidatePaths = new List<List<Coordinate>>(10000);//magic number?
+        public const int DfsDepth = 20;
 
         static public List<Coordinate> GetPath(Coordinate start, Coordinate end)
         {
@@ -40,6 +42,7 @@ namespace Snake
                     TailDistance[i, j] = 0;
                 }
             }
+            CandidatePaths.Clear();
         }
     }
 

@@ -1,18 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using static Snake.SearchResource;
@@ -112,8 +101,6 @@ namespace Snake
             return x * GridWidth + y;
         }
 
-       
-
         private bool UpdateEgg()
         {
             if (_snake.SnakeBody.Count == (GridWidth - 2) * (GridHeight - 2))
@@ -121,24 +108,25 @@ namespace Snake
                 _eggPos = Nothing;          
                 return true;
             }
-            var x = RandomGen.Next(1, GridWidth - 1);
-            var y = RandomGen.Next(1, GridHeight - 1);
-            while (_snake.SnakeBody.Contains(new Coordinate(x, y)))
+            int x, y;
+            do
             {
                 x = RandomGen.Next(1, GridWidth - 1);
                 y = RandomGen.Next(1, GridHeight - 1);
-            }
+            } while(_snake.SnakeBody.Contains(new Coordinate(x, y)));
+
             _graph[x, y] = GridState.Egg;
             _eggPos.X = x;
             _eggPos.Y = y;
             _snake.EggPos = _eggPos;
+
             return false;
         }
 
         private void InitializeTimer()
         {
             _timer.Tick += OnTimer;
-            _timer.Interval = TimeSpan.FromSeconds(0.1);
+            _timer.Interval = TimeSpan.FromSeconds(0.01);
             _timer.Start();
         }
 
@@ -166,8 +154,7 @@ namespace Snake
                 case GridState.Snake:
                     throw new InvalidOperationException();
             }
-            DrawSnake();
-            //path.RemoveAt(path.Count - 1);
+            DrawSnake();       
         }
 
        
