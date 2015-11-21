@@ -19,6 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI", "AI", "{3BC59E5B-9EAA-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EatingSnake", "Snake\EatingSnake.csproj", "{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Algorithm", "Algorithm", "{3084608B-45B0-4E26-96C6-6B1365E21C72}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NQueen", "NQueen\NQueen.vcxproj", "{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,11 +109,22 @@ Global
 		{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D}.Release|x64.Build.0 = Release|Any CPU
 		{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D}.Release|x86.ActiveCfg = Release|Any CPU
 		{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D}.Release|x86.Build.0 = Release|Any CPU
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Debug|x64.ActiveCfg = Debug|x64
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Debug|x64.Build.0 = Debug|x64
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Debug|x86.ActiveCfg = Debug|Win32
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Debug|x86.Build.0 = Debug|Win32
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|Any CPU.ActiveCfg = Release|Win32
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x64.ActiveCfg = Release|x64
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x64.Build.0 = Release|x64
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x86.ActiveCfg = Release|Win32
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D} = {3BC59E5B-9EAA-40E0-BBEE-9126540856A5}
+		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4} = {3084608B-45B0-4E26-96C6-6B1365E21C72}
 	EndGlobalSection
 EndGlobal
