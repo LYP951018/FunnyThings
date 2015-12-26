@@ -3,6 +3,7 @@
 #include <range\v3\all.hpp>
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <iostream>
 
 using namespace ranges::v3;

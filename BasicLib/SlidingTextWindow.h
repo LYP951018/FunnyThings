@@ -1,47 +1,53 @@
 #pragma once
 
 #include "StringType.h"
+#include "Nonable.h"
+
+//TODO: remove limits
 #include <limits>
 
 
-class SlidingTextWindow
+namespace funny
 {
-
-public:
-	static constexpr CharType InvalidCharacter = std::numeric_limits<CharType>::max();
-
-	SlidingTextWindow() noexcept = default;
-
-	SlidingTextWindow(StringType str);
-
-	void AdvanceChar() noexcept
+	class SlidingTextWindow : public Noncopymoveable
 	{
-		AdvanceChar(1);
-	}
 
-	void AdvanceChar(std::size_t n) noexcept;
+	public:
+		static constexpr CharType InvalidCharacter = std::numeric_limits<CharType>::max();
 
-	CharType PeekChar() noexcept
-	{
-		if (pos_ >= lineContent_.length()) return InvalidCharacter;
-		return lineContent_[pos_];
-	}
+		SlidingTextWindow() noexcept = default;
 
-	CharType PeekChar(std::size_t delta) noexcept;
+		SlidingTextWindow(StringType str);
 
-	CharType NextChar() noexcept;
+		void AdvanceChar() noexcept
+		{
+			AdvanceChar(1);
+		}
 
-	bool AdvanceIfPositiveInteger(int& result) noexcept;
+		void AdvanceChar(std::size_t n) noexcept;
 
-	bool AdvanceIfMatches(CharType c) noexcept;
+		CharType PeekChar() noexcept
+		{
+			if (pos_ >= lineContent_.length()) return InvalidCharacter;
+			return lineContent_[pos_];
+		}
 
-	bool AdvanceIfMatches(const StringType& str) noexcept;
+		CharType PeekChar(std::size_t delta) noexcept;
 
-public:
+		CharType NextChar() noexcept;
 
-	StringType lineContent_;
-	std::size_t pos_{};
+		bool AdvanceIfPositiveInteger(int& result) noexcept;
 
-	void Reset(std::size_t pos) noexcept;
-};
+		bool AdvanceIfMatches(CharType c) noexcept;
+
+		bool AdvanceIfMatches(const StringType& str) noexcept;
+
+	public:
+
+		StringType lineContent_;
+		std::size_t pos_{};
+
+		void Reset(std::size_t pos) noexcept;
+	};
+}
 

@@ -255,6 +255,25 @@ namespace RegexChart.RegexParser
                 }
             }
         }
+
+        public static void Add<T> (Dictionary<T,List<T>> dictionary,T key,T value)
+        {
+            if(dictionary.Keys.Contains(key))
+            {
+                dictionary[key].Add(value);
+            }
+            else
+            {
+                var newList = new List<T>();
+                dictionary.Add(key, newList);
+                newList.Add(value);
+            }
+        }
+
+        public static Automaton NfaToDfa(Automaton nfa)
+        {
+            return null;
+        }
     }
 
 }

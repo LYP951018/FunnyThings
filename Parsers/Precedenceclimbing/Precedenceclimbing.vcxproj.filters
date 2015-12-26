@@ -15,40 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Assert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ComPtr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SlidingTextWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StringType.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SyntaxDiagnosticInfo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AbstractLexer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Nonable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Lexer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SlidingTextWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StringType.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SyntaxDiagnosticInfo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="Lexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SyntaxKind.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TokenInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

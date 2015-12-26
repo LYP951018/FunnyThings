@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cdecl", "cdecl\cdecl.vcxproj", "{EB905638-559D-434C-B763-4A766809E1AE}"
 EndProject
@@ -22,6 +22,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Algorithm", "Algorithm", "{3084608B-45B0-4E26-96C6-6B1365E21C72}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NQueen", "NQueen\NQueen.vcxproj", "{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Pasers", "Pasers", "{2BE5EF2D-C5ED-49A0-BB40-06FF73EB994E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Precedenceclimbing", "Parsers\Precedenceclimbing\Precedenceclimbing.vcxproj", "{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -119,6 +123,16 @@ Global
 		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x64.Build.0 = Release|x64
 		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x86.ActiveCfg = Release|Win32
 		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4}.Release|x86.Build.0 = Release|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Debug|x64.ActiveCfg = Debug|x64
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Debug|x64.Build.0 = Debug|x64
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Debug|x86.ActiveCfg = Debug|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Debug|x86.Build.0 = Debug|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Release|Any CPU.ActiveCfg = Release|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Release|x64.ActiveCfg = Release|x64
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Release|x64.Build.0 = Release|x64
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Release|x86.ActiveCfg = Release|Win32
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,5 +140,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8BDCB71C-8682-4EBA-AFF5-CCB6C327367D} = {3BC59E5B-9EAA-40E0-BBEE-9126540856A5}
 		{F8EDD5F0-2A1D-49A7-A104-1D6A7AA514F4} = {3084608B-45B0-4E26-96C6-6B1365E21C72}
+		{88F34BE4-8BB1-49DB-A4EF-CCEF0E31E939} = {2BE5EF2D-C5ED-49A0-BB40-06FF73EB994E}
 	EndGlobalSection
 EndGlobal

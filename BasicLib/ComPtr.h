@@ -4,7 +4,7 @@
 #include <utility>
 #include "Assert.h"
 
-namespace Yupei
+namespace funny
 {
 	template<typename Interface>
 	class ComPtr
