@@ -53,7 +53,8 @@ namespace RegexChart
                 var exp = parser.ParseExpression();
                 EpsilonNfa = exp.GenerateExpsilonNfa();
                 Nfa = Automaton.RemoveEpsilon(EpsilonNfa);
-                
+                Dictionary<State, List<State>> statesMap;
+                Dfa = Automaton.NfaToDfa(Nfa, out statesMap);
             }
            
         }
@@ -89,11 +90,10 @@ namespace RegexChart
         }
 
 
-
-
         private string regexString;
         Automaton EpsilonNfa;
         Automaton Nfa;
+        Automaton Dfa;
         GraphViewer graphViewer = new GraphViewer();
 
         private void EpsilonNFA_Click(object sender, RoutedEventArgs e)
@@ -104,6 +104,11 @@ namespace RegexChart
         private void NFA_Click(object sender, RoutedEventArgs e)
         {
             DrawGraph(Nfa);
+        }
+
+        private void DFA_Click(object sender, RoutedEventArgs e)
+        {
+            DrawGraph(Dfa);
         }
     }
 }

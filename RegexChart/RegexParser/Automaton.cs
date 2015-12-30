@@ -54,8 +54,8 @@ namespace RegexChart.RegexParser
         
         public Transition(Transition transition)
         {
-            Start = transition.Start;
-            End = transition.End;
+            //Start = transition.Start;
+            //End = transition.End;
             Range = transition.Range;
             TransitionType = transition.TransitionType;
             Capture = transition.Capture;
@@ -109,7 +109,28 @@ namespace RegexChart.RegexParser
             return string.Empty;
         }
 
-       
+        static public bool operator ==(Transition lhs,Transition rhs)
+        {
+            if (ReferenceEquals(lhs, rhs)) return true;
+            if (ReferenceEquals(lhs, null) || ReferenceEquals(rhs, null)) return false;
+            if (lhs.TransitionType != rhs.TransitionType) return false;
+            switch(lhs.TransitionType)
+            {
+                case Type.Chars:
+                    return lhs.Range == rhs.Range;
+                case Type.Capture:
+                    return lhs.Capture == rhs.Capture;
+                case Type.Match:
+                    return lhs.Capture == rhs.Capture && lhs.Index == rhs.Index;
+                default:
+                    return true;
+            }
+        }
+
+        static public bool operator !=(Transition lhs, Transition rhs)
+        {
+            return !(lhs == rhs);
+        }
     }
 
     public class State
@@ -125,6 +146,23 @@ namespace RegexChart.RegexParser
             Output = new List<Transition>();
             IsFinalState = false;
             UserData = null;
+        }
+    }
+
+    public static class GroupOperations
+    {
+        public static void GroupAdd<T>(this Dictionary<T, List<T>> dictionary, T key, T value)
+        {
+            if (dictionary.Keys.Contains(key))
+            {
+                dictionary[key].Add(value);
+            }
+            else
+            {
+                var newList = new List<T>();
+                dictionary.Add(key, newList);
+                newList.Add(value);
+            }
         }
     }
 
@@ -256,23 +294,92 @@ namespace RegexChart.RegexParser
             }
         }
 
-        public static void Add<T> (Dictionary<T,List<T>> dictionary,T key,T value)
+        
+        public static Automaton NfaToDfa(Automaton nfa, out Dictionary<State, List<State>> statesMap)
         {
-            if(dictionary.Keys.Contains(key))
-            {
-                dictionary[key].Add(value);
-            }
-            else
-            {
-                var newList = new List<T>();
-                dictionary.Add(key, newList);
-                newList.Add(value);
-            }
-        }
+            //NFA 转 DFA 时，一条边对应多个边（合并同样功能的边）
+            var dfaToNfaTransitionsMap = new Dictionary<Transition, List<Transition>>();
 
-        public static Automaton NfaToDfa(Automaton nfa)
-        {
-            return null;
+            //TODO: capture names!
+            var target = new Automaton();
+            var dfaStartState = target.AddState();
+            var transitionClasses = new List<Transition>();
+            statesMap = new Dictionary<State, List<State>>();
+            var targetStates = new List<State>();
+
+            statesMap.GroupAdd(dfaStartState, nfa.StartState);
+            target.StartState = dfaStartState;
+
+            for(int i = 0;i < target.States.Count;++i)
+            {
+                var curState = target.States[i];
+                dfaToNfaTransitionsMap.Clear();
+                transitionClasses.Clear();
+
+                var nfaStates = statesMap[curState];
+
+                foreach(var nfaState in nfaStates)
+                {
+                    foreach (var transition in nfaState.Output)
+                    {
+                        Transition transitionClass = null;
+                        foreach (var keyTransition in dfaToNfaTransitionsMap.Keys)
+                        {
+                            if (keyTransition == transition)
+                            {
+                                transitionClass = keyTransition;
+                                break;
+                            }
+                        }
+                        if (transitionClass == null)
+                        {
+                            dfaToNfaTransitionsMap.GroupAdd(transition, transition);
+                            transitionClasses.Add(transition);
+                        }
+                    }
+
+                }
+
+                foreach (var transitionClass in transitionClasses)
+                {
+                    var transitionsList = dfaToNfaTransitionsMap[transitionClass];
+                    //合并相同的 transition 所指的状态。
+                    targetStates.Clear();
+                    foreach(var transition in  transitionsList)
+                    {
+                        var state = transition.End;
+                        if (!targetStates.Contains(state))
+                            targetStates.Add(state);
+                    }
+                    State finalDfaState = null;
+                    //判断是否已经存在于当前 targetStates 一模一样的 DFA 状态                  
+                    foreach(var kv in statesMap)
+                    {
+                        var states = kv.Value;
+                        if(states.Count != targetStates.Count 
+                            || states.GetHashCode() != targetStates.GetHashCode()
+                            || states.Intersect(targetStates).Count() != states.Count)
+                        {
+                            finalDfaState = kv.Key;
+                            break;
+                        }
+                    }
+
+                    if(finalDfaState == null)
+                    {
+                        finalDfaState = target.AddState();
+                        foreach(var state in targetStates)
+                        {
+                            if (state.IsFinalState)
+                                finalDfaState.IsFinalState = true;
+                            statesMap.GroupAdd(finalDfaState, state);
+                        }
+                    }
+                    target.AddTransition(transitionClass);
+                }
+            }
+
+            return target;
         }
     }
 
