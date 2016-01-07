@@ -63,6 +63,7 @@ namespace iSchemeInterpreter
                  if (numbers.Length == 1) return -firstValue;
                  return firstValue - numbers.Skip(1).Sum(s => s);
              });
+            BuildIn("*", (args, scope) => args.Evaluate<SNumber>(scope).Aggregate((a, b) => a * b));
             BuildIn("first", (args, scope) =>
              {
                  SList list = null;
@@ -111,7 +112,7 @@ namespace iSchemeInterpreter
         {
             if (names.Length < values.Length) throw new Exception("too many arguments");
             var scope = new SScope(this);
-            foreach (var i in Enumerable.Range(1, values.Length))
+            for(int i = 0;i < names.Length;++i)
                 scope._symbolTable.Add(names[i], values[i]);
             return scope;
         }

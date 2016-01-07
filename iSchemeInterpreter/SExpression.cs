@@ -30,7 +30,11 @@ namespace iSchemeInterpreter
         {
             if(Children.Count == 0)
             {
-                return Int64.Parse(Value);
+                Int64 number;
+                if (Int64.TryParse(Value, out number))
+                    return number;
+                else
+                    return scope.Find(Value);
             }
             else
             {
@@ -51,7 +55,7 @@ namespace iSchemeInterpreter
                     {
                         var funcName = child.Children[0].Value;
                         var body = Children[2];
-                        var parameters = child.Children[1].Children.Select(exp => exp.Value).ToArray();                      
+                        var parameters = child.Children.Skip(1).Select(exp => exp.Value).ToArray();                      
                         var newScope = new SScope(scope);
                         var func = new SFunction(body, parameters, newScope);
                         return scope.Define(funcName,func);
