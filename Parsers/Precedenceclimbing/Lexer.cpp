@@ -10,18 +10,36 @@ void Lexer::GetToken(TokenInfo & info)
 	case L'+':
 		textWindow_.AdvanceChar();
 		info.Kind_ = SyntaxKind::PlusToken;
+		info.Text_ = L"+";
 		break;
 	case L'-':
 		textWindow_.AdvanceChar();
 		info.Kind_ = SyntaxKind::MinusToken;
+		info.Text_ = L"-";
 		break;
 	case L'/':
 		textWindow_.AdvanceChar();
 		info.Kind_ = SyntaxKind::SlashToken;
+		info.Text_ = L"/";
 		break;
 	case L'*':
 		textWindow_.AdvanceChar();
 		info.Kind_ = SyntaxKind::AsteriskToken;
+		info.Text_ = L"*";
+		break;
+	case L'=':
+		textWindow_.AdvanceChar();
+		if (textWindow_.PeekChar() == L'=')
+		{
+			textWindow_.AdvanceChar();
+			info.Kind_ = SyntaxKind::EqualsEqualsToken;
+			info.Text_ = L"==";
+		}
+		else
+		{
+			info.Kind_ = SyntaxKind::EqualsToken;
+			info.Text_ = L"=";
+		}
 		break;
 	case L'|':
 		textWindow_.AdvanceChar();
@@ -29,9 +47,13 @@ void Lexer::GetToken(TokenInfo & info)
 		{
 			textWindow_.AdvanceChar();
 			info.Kind_ = SyntaxKind::BarBarToken;
+			info.Text_ = L"||";
 		}
 		else
+		{
 			info.Kind_ = SyntaxKind::BarToken;
+			info.Text_ = L"|";
+		}			
 		break;
 	case L'&':
 		textWindow_.AdvanceChar();
@@ -42,10 +64,6 @@ void Lexer::GetToken(TokenInfo & info)
 		}
 		else
 			info.Kind_ = SyntaxKind::AmpersandToken;
-		break;
-	case L'=':
-		textWindow_.AdvanceChar();
-		info.Kind_ = SyntaxKind::EqualsToken;
 		break;
 	case L'1':
 	case L'2':
@@ -83,9 +101,12 @@ bool Lexer::ScanNumericLiteral(TokenInfo & info)
 			builder.push_back(ch);
 			textWindow_.AdvanceChar();
 			ScanNumericLiteralSingleInteger(builder);
+			info.Text_ = builder;
 		}
 		//TODO: Process dot.
 	}
+	else
+		info.Text_ = builder;
 
 	//TODO: complete all kinds of literals
 	if ((ch = textWindow_.PeekChar()) == L'E' || ch == L'e')

@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
-    
+
     class EpsilonNfaInfo
     {
         public Automaton NfaAutomation { get; } = new Automaton();
     }
 
-    class EpsilonNfa 
+    class EpsilonNfa
     {
-        public State Start { get; set; } 
+        public State Start { get; set; }
         public State End { get; set; }
 
         public EpsilonNfa()
@@ -29,7 +29,7 @@ namespace RegexChart.RegexParser
             End = rhs.End;
         }
 
-        public EpsilonNfa(State start,State end)
+        public EpsilonNfa(State start, State end)
         {
             Start = start;
             End = end;
@@ -40,15 +40,15 @@ namespace RegexChart.RegexParser
             Start = automaton.AddState();
             End = automaton.AddState();
         }
-               
+
     }
 
 
     class EpsilonNfaAlgorithm : RegexExpressionAlgorithm<EpsilonNfa, Automaton>
     {
-        public EpsilonNfa Connect(EpsilonNfa a,EpsilonNfa b,Automaton target)
+        public EpsilonNfa Connect(EpsilonNfa a, EpsilonNfa b, Automaton target)
         {
-            if(a.Start != null)
+            if (a.Start != null)
             {
                 var ret = new EpsilonNfa(a);
                 target.AddTransition(a.End, b.Start, Transition.Type.Epsilon);
@@ -62,7 +62,7 @@ namespace RegexChart.RegexParser
         {
             return Connect(
                 Invoke(expression.Left, param),
-                Invoke(expression.Right, param),param);
+                Invoke(expression.Right, param), param);
         }
 
         public override EpsilonNfa Apply(BeginExpression expression, Automaton param)
@@ -76,12 +76,12 @@ namespace RegexChart.RegexParser
         {
             var nfa = new EpsilonNfa(param);
             int captureIndex = 0;
-            if(expression.Name.Length != 0)
+            if (expression.Name.Length != 0)
             {
                 var names = param.CaptureNames;
                 captureIndex = names.IndexOf(expression.Name);
                 if (captureIndex == -1)
-                {                   
+                {
                     captureIndex = names.Count;
                     names.Add(expression.Name);
                 }
@@ -110,7 +110,7 @@ namespace RegexChart.RegexParser
         {
             var nfa = new EpsilonNfa(param);
             var body = Invoke(expression.Matched, param);
-            param.AddTransition(nfa.Start, body.Start,Transition.Type.Negative);
+            param.AddTransition(nfa.Start, body.Start, Transition.Type.Negative);
             param.AddTransition(body.End, nfa.End, Transition.Type.Negative);
             param.AddTransition(nfa.Start, nfa.End, Transition.Type.NegativeFail);
             return nfa;
@@ -119,11 +119,11 @@ namespace RegexChart.RegexParser
         public override EpsilonNfa Apply(MatchExpression expression, Automaton param)
         {
             int captureIndex = -1;
-            if(expression.Name.Length != 0)
+            if (expression.Name.Length != 0)
             {
                 var names = param.CaptureNames;
                 captureIndex = names.IndexOf(expression.Name);
-                if(captureIndex == -1)
+                if (captureIndex == -1)
                 {
                     captureIndex = names.Count;
                     names.Add(expression.Name);
@@ -156,22 +156,22 @@ namespace RegexChart.RegexParser
 
         public override EpsilonNfa Apply(LoopExpression expression, Automaton param)
         {
-            var nfa = new EpsilonNfa();                     
-            for(int i = 0; i < expression.Min;++i)
+            var nfa = new EpsilonNfa();
+            for (int i = 0; i < expression.Min; ++i)
             {
                 var body = Invoke(expression.Looped, param);
-                nfa = Connect(nfa, body, param);              
+                nfa = Connect(nfa, body, param);
             }
-            if(expression.Max == -1)
+            if (expression.Max == -1)
             {
                 var body = Invoke(expression.Looped, param);
-                if(nfa.Start == null)
+                if (nfa.Start == null)
                 {
                     nfa.Start = nfa.End = param.AddState();
                 }
                 var loopBegin = nfa.End;
                 var loopEnd = param.AddState();
-                if(expression.IsGreedy)
+                if (expression.IsGreedy)
                 {
                     param.AddTransition(loopBegin, body.Start, Transition.Type.Epsilon);
                     param.AddTransition(body.End, loopBegin, Transition.Type.Epsilon);
@@ -181,18 +181,18 @@ namespace RegexChart.RegexParser
                 {
                     param.AddTransition(loopBegin, loopEnd, Transition.Type.Nop);
                     param.AddTransition(loopBegin, body.Start, Transition.Type.Epsilon);
-                    param.AddTransition(body.End, loopBegin, Transition.Type.Epsilon);                   
+                    param.AddTransition(body.End, loopBegin, Transition.Type.Epsilon);
                 }
                 nfa.End = loopEnd;
             }
-            else if(expression.Min < expression.Max)
+            else if (expression.Min < expression.Max)
             {
-                for(int i = expression.Min;i < expression.Max;++i)
+                for (int i = expression.Min; i < expression.Max; ++i)
                 {
                     var body = Invoke(expression.Looped, param);
-                    var start = new State();
-                    var end = new State();
-                    if(expression.IsGreedy)
+                    var start = param.AddState();
+                    var end = param.AddState();
+                    if (expression.IsGreedy)
                     {
                         param.AddTransition(start, body.Start, Transition.Type.Epsilon);
                         param.AddTransition(body.End, end, Transition.Type.Epsilon);
@@ -206,7 +206,7 @@ namespace RegexChart.RegexParser
                     }
                     body.Start = start;
                     body.End = end;
-                    nfa = Connect(nfa, body, param);                
+                    nfa = Connect(nfa, body, param);
                 }
             }
             return nfa;
@@ -216,7 +216,7 @@ namespace RegexChart.RegexParser
         {
             //[a-z A-Z] 是或，两个 State 之间有许多 range 边
             var nfa = new EpsilonNfa(param);
-            foreach(var r in expression.Ranges)
+            foreach (var r in expression.Ranges)
             {
                 param.AddCharRange(nfa.Start, nfa.End, r);
             }

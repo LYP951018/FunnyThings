@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -127,14 +128,41 @@ namespace RegexChart.RegexParser
             }
         }
 
+        public override int GetHashCode()
+        {
+            switch (TransitionType)
+            {
+                case Type.Chars:
+                    return Range.GetHashCode();
+                case Type.Capture:
+                    return Capture.GetHashCode();
+                case Type.Match:
+                    return (Capture.GetHashCode() + Index.GetHashCode()).GetHashCode();
+                default:
+                    return base.GetHashCode();
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null) return false;
+            if (GetType() != obj.GetType()) return false;
+            return this == (Transition)obj;
+        }
+
         static public bool operator !=(Transition lhs, Transition rhs)
         {
             return !(lhs == rhs);
         }
     }
 
+    [DebuggerDisplay("Index = {Index}")]
     public class State
     {
+#if DEBUG
+        private static int _globalIndex;
+        int Index { get; set; }
+#endif
         public List<Transition> Input { get; set; }
         public List<Transition> Output { get; set; }
         public bool IsFinalState { get; set; }
@@ -142,6 +170,10 @@ namespace RegexChart.RegexParser
 
         public State()
         {
+#if DEBUG
+            Index = _globalIndex;
+            ++_globalIndex;
+#endif
             Input = new List<Transition>();
             Output = new List<Transition>();
             IsFinalState = false;
@@ -166,12 +198,15 @@ namespace RegexChart.RegexParser
         }
     }
 
+
     public class Automaton
     {
+
         public List<State> States { get; } = new List<State>();
         public List<Transition> Transitions { get; } = new List<Transition>();
         public List<string> CaptureNames { get; } = new List<string>();
         public State StartState { get; set; }
+
 
         public State AddState()
         {
@@ -244,20 +279,18 @@ namespace RegexChart.RegexParser
                 var state = nfa.States[i];
                 var oldState = newToOld[state];
                 FindPath(oldState, state, transitions, epsilonStates);
-                foreach(var trans in transitions)
+                if (oldState.IsFinalState) state.IsFinalState = true;
+                foreach (var trans in transitions)
                 {
                     var target = trans.End;
                     if(!oldToNew.Keys.Contains(target))
                     {
-                        var newState = nfa.AddState();
-                        if (state.IsFinalState) newState.IsFinalState = true;
+                        var newState = nfa.AddState();                      
                         oldToNew.Add(target, newState);
                         newToOld.Add(newState, target);
                     }
-                    var newTransition = new Transition(trans);
-                    newTransition.Start = state;
-                    newTransition.End = oldToNew[target];
-                    nfa.AddTransition(newTransition);
+                    var newTransition = nfa.AddTransition(state, oldToNew[target], trans.TransitionType);
+                    newTransition.TransitionType = trans.TransitionType;
                 }
                 transitions.Clear();
                 epsilonStates.Clear();
@@ -268,10 +301,10 @@ namespace RegexChart.RegexParser
         public static bool IsConsume(Transition transition)
         {
             var type = transition.TransitionType;
-            return type != Transition.Type.Epsilon ;
+            return type != Transition.Type.Epsilon;
         }
 
-        public static void FindPath(State source,State target,List<Transition> transitions,List<State> epsilonStates)
+        public static void FindPath(State source, State target, List<Transition> transitions, List<State> epsilonStates)
         {
             if(!epsilonStates.Contains(source))
             {

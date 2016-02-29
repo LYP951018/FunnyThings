@@ -71,6 +71,7 @@ namespace iSchemeInterpreter
                  return list.First();
              });
             BuildIn("=", (args, scope) => args.ChainRelation(scope, (s1, s2) => (Int64)s1 == (Int64)s2));
+            BuildIn(">=", (args, scope) => args.ChainRelation(scope, (s1, s2) => (Int64)s1 >= (Int64)s2));
         }
               
         public SScope(SScope parent)
