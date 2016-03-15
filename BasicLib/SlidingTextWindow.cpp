@@ -1,6 +1,5 @@
-#include "SlidingTextWindow.h"
+#include "SlidingTextWindow.hpp"
 
-#include <iostream>
 #include <utility>
 #include <cassert>
 

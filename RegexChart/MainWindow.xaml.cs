@@ -53,7 +53,7 @@ namespace RegexChart
                 var exp = parser.ParseExpression();
                 EpsilonNfa = exp.GenerateExpsilonNfa();
                 Nfa = Automaton.RemoveEpsilon(EpsilonNfa);
-                Dictionary<State, List<State>> statesMap;
+                MultiValueDictionary<State, State> statesMap;
                 Dfa = Automaton.NfaToDfa(Nfa, out statesMap);
             }
            

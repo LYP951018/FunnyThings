@@ -118,19 +118,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AbstractLexer.h" />
-    <ClInclude Include="Assert.h" />
-    <ClInclude Include="Basic.h" />
-    <ClInclude Include="ComPtr.h" />
-    <ClInclude Include="Nonable.h" />
-    <ClInclude Include="SlidingTextWindow.h" />
-    <ClInclude Include="StringType.h" />
-    <ClInclude Include="SyntaxDiagnosticInfo.h" />
+    <ClInclude Include="AbstractLexer.hpp" />
+    <ClInclude Include="Assert.hpp" />
+    <ClInclude Include="Basic.hpp" />
+    <ClInclude Include="ComPtr.hpp" />
+    <ClInclude Include="HandleWrapper.hpp" />
+    <ClInclude Include="HandleWrappers.hpp" />
+    <ClInclude Include="Nonable.hpp" />
+    <ClInclude Include="SlidingTextWindow.hpp" />
+    <ClInclude Include="StringType.hpp" />
+    <ClInclude Include="SyntaxDiagnosticInfo.hpp" />
+    <ClInclude Include="Win32Wrappers.hpp" />
+    <ClInclude Include="WinDef.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SlidingTextWindow.cpp" />
     <ClCompile Include="StringType.cpp" />
     <ClCompile Include="SyntaxDiagnosticInfo.cpp" />
+    <ClCompile Include="Win32Wrappers.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

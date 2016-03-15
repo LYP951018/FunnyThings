@@ -1,4 +1,4 @@
-#include "StringType.h"
+#include "StringType.hpp"
 #include <iostream>
 
 namespace funny

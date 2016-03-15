@@ -15,28 +15,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Assert.h">
+    <ClInclude Include="HandleWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ComPtr.h">
+    <ClInclude Include="HandleWrappers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SlidingTextWindow.h">
+    <ClInclude Include="Win32Wrappers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StringType.h">
+    <ClInclude Include="AbstractLexer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Basic.h">
+    <ClInclude Include="Assert.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SyntaxDiagnosticInfo.h">
+    <ClInclude Include="Basic.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AbstractLexer.h">
+    <ClInclude Include="ComPtr.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Nonable.h">
+    <ClInclude Include="Nonable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SlidingTextWindow.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StringType.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SyntaxDiagnosticInfo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WinDef.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SyntaxDiagnosticInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32Wrappers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

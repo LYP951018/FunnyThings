@@ -21,12 +21,12 @@ namespace RegexChart.RegexParser
         void Visit(ReferenceExpression expression);
     }
 
-    public abstract class RegexExpressionAlgorithm<ReturnT,ParamT> : IExpressionAlgorithm
+    public abstract class RegexExpressionAlgorithm<ReturnT, ParamT> : IExpressionAlgorithm
     {
         private ReturnT _returnValue;
         private ParamT _paramValue;
 
-        public ReturnT Invoke(Expression expression,ParamT param)
+        public ReturnT Invoke(Expression expression, ParamT param)
         {
             _paramValue = param;
             expression.Apply(this);

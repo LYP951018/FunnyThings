@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
@@ -13,9 +11,9 @@ namespace RegexChart.RegexParser
         {
             Chars,
             Epsilon,
-            BeginString, //^
-            EndString, //$
-            Nop, //控制优先级
+            BeginString,            //^
+            EndString,              //$
+            Nop,                    //控制优先级
             Capture,
             Match,
             Positive,
@@ -44,13 +42,11 @@ namespace RegexChart.RegexParser
         public Transition()
             : this(null, null)
         {
-
         }
 
         public Transition(State start, State end)
             : this(start, end, Type.Epsilon)
         {
-
         }
         
         public Transition(Transition transition)
@@ -66,13 +62,11 @@ namespace RegexChart.RegexParser
         public Transition(State start, State end, Type transitionType)
             : this(start, end, default(CharRange), transitionType, 0, 0)
         {
-
         }
 
         public Transition(State start, State end, CharRange range)
             : this(start, end, range, Type.Chars, 0, 0)
         {
-
         }
 
         public override string ToString()
@@ -181,32 +175,12 @@ namespace RegexChart.RegexParser
         }
     }
 
-    public static class GroupOperations
-    {
-        public static void GroupAdd<T>(this Dictionary<T, List<T>> dictionary, T key, T value)
-        {
-            if (dictionary.Keys.Contains(key))
-            {
-                dictionary[key].Add(value);
-            }
-            else
-            {
-                var newList = new List<T>();
-                dictionary.Add(key, newList);
-                newList.Add(value);
-            }
-        }
-    }
-
-
     public class Automaton
     {
-
         public List<State> States { get; } = new List<State>();
         public List<Transition> Transitions { get; } = new List<Transition>();
         public List<string> CaptureNames { get; } = new List<string>();
         public State StartState { get; set; }
-
 
         public State AddState()
         {
@@ -264,17 +238,21 @@ namespace RegexChart.RegexParser
         {
             //标记所有输入的边都没有消耗字符的状态
             //TODO: copy captured names
-            List<Transition> transitions = new List<Transition>();
-            var oldToNew = new Dictionary<State, State>();
-            var newToOld = new Dictionary<State, State>();
             var nfa = new Automaton();
-            var epsilonStates = new List<State>();
             var newStartstate = nfa.AddState();
-            oldToNew.Add(source.StartState, newStartstate);
-            newToOld.Add(newStartstate, source.StartState);
             nfa.StartState = newStartstate;
-            
-            for(int i = 0;i < nfa.States.Count;++i)
+            List<Transition> transitions = new List<Transition>();
+            var oldToNew = new Dictionary<State, State>
+            {
+                [source.StartState] = newStartstate
+            };
+            var newToOld = new Dictionary<State, State>()
+            {
+                [newStartstate] = source.StartState
+            };                     
+            var epsilonStates = new List<State>();      
+                            
+            for(int i = 0; i < nfa.States.Count; ++i)
             {
                 var state = nfa.States[i];
                 var oldState = newToOld[state];
@@ -290,7 +268,9 @@ namespace RegexChart.RegexParser
                         newToOld.Add(newState, target);
                     }
                     var newTransition = nfa.AddTransition(state, oldToNew[target], trans.TransitionType);
-                    newTransition.TransitionType = trans.TransitionType;
+                    newTransition.Range = trans.Range;
+                    newTransition.Capture = trans.Capture;
+                    newTransition.Index = trans.Index;
                 }
                 transitions.Clear();
                 epsilonStates.Clear();
@@ -300,8 +280,7 @@ namespace RegexChart.RegexParser
 
         public static bool IsConsume(Transition transition)
         {
-            var type = transition.TransitionType;
-            return type != Transition.Type.Epsilon;
+            return transition.TransitionType != Transition.Type.Epsilon;
         }
 
         public static void FindPath(State source, State target, List<Transition> transitions, List<State> epsilonStates)
@@ -313,106 +292,85 @@ namespace RegexChart.RegexParser
                 {
                     if(!IsConsume(t))
                     {
-                        if(!epsilonStates.Contains(t.End))
-                        {
-                            if (t.End.IsFinalState) target.IsFinalState = true;
-                            FindPath(t.End, target, transitions, epsilonStates);
-                        }
+                        if (t.End.IsFinalState) target.IsFinalState = true;
+                        FindPath(t.End, target, transitions, epsilonStates);
                     }
                     else
-                    {
                         transitions.Add(t);
-                    }
                 }
             }
         }
-
-        
-        public static Automaton NfaToDfa(Automaton nfa, out Dictionary<State, List<State>> statesMap)
+               
+        public static Automaton NfaToDfa(Automaton nfa, out MultiValueDictionary<State, State> dfaStatesToNfa)
         {
-            //NFA 转 DFA 时，一条边对应多个边（合并同样功能的边）
-            var dfaToNfaTransitionsMap = new Dictionary<Transition, List<Transition>>();
-
-            //TODO: capture names!
-            var target = new Automaton();
-            var dfaStartState = target.AddState();
+            var dfa = new Automaton();
+            var dfaStartState = dfa.AddState();
+            dfa.StartState = dfaStartState;
+            var nfaTransitionsToDfa = new MultiValueDictionary<Transition, Transition>();
             var transitionClasses = new List<Transition>();
-            statesMap = new Dictionary<State, List<State>>();
-            var targetStates = new List<State>();
-
-            statesMap.GroupAdd(dfaStartState, nfa.StartState);
-            target.StartState = dfaStartState;
-
-            for(int i = 0;i < target.States.Count;++i)
+            var mergeStates = new HashSet<State>();
+            dfaStatesToNfa = new MultiValueDictionary<State, State>();
+            dfaStatesToNfa.Add(dfaStartState, nfa.StartState);
+            //不动点算法，不能使用 foreach！
+            for(int i = 0; i < dfa.States.Count; ++i)
             {
-                var curState = target.States[i];
-                dfaToNfaTransitionsMap.Clear();
-                transitionClasses.Clear();
-
-                var nfaStates = statesMap[curState];
-
+                var curDfaState = dfa.States[i];
+                var nfaStates = dfaStatesToNfa[curDfaState];
                 foreach(var nfaState in nfaStates)
                 {
-                    foreach (var transition in nfaState.Output)
-                    {
-                        Transition transitionClass = null;
-                        foreach (var keyTransition in dfaToNfaTransitionsMap.Keys)
+                    foreach(var outTransition in nfaState.Output)
+                    {                         
+                        if (!nfaTransitionsToDfa.Values.SelectMany(transitions => transitions).Contains(outTransition))
                         {
-                            if (keyTransition == transition)
-                            {
-                                transitionClass = keyTransition;
-                                break;
-                            }
-                        }
-                        if (transitionClass == null)
-                        {
-                            dfaToNfaTransitionsMap.GroupAdd(transition, transition);
-                            transitionClasses.Add(transition);
+                            transitionClasses.Add(outTransition);
+                            nfaTransitionsToDfa.Add(outTransition, outTransition);
                         }
                     }
-
                 }
 
-                foreach (var transitionClass in transitionClasses)
+                foreach(var transitionClass in transitionClasses)
                 {
-                    var transitionsList = dfaToNfaTransitionsMap[transitionClass];
-                    //合并相同的 transition 所指的状态。
-                    targetStates.Clear();
-                    foreach(var transition in  transitionsList)
+                    var nfaTransitions = nfaTransitionsToDfa[transitionClass];
+                    foreach(var nfaTransition in nfaTransitions)
                     {
-                        var state = transition.End;
-                        if (!targetStates.Contains(state))
-                            targetStates.Add(state);
+                        var state = nfaTransition.End;
+                        if (!mergeStates.Contains(state))
+                            mergeStates.Add(state);
                     }
-                    State finalDfaState = null;
-                    //判断是否已经存在于当前 targetStates 一模一样的 DFA 状态                  
-                    foreach(var kv in statesMap)
+
+                    mergeStates.OrderBy(state => state);
+
+                    //mergeStates 是候选的一个 DFA 状态。在这之前，还需要判断：这个候选状态是否已经存在于 DFA 中了？
+                    //var isContained = dfaStatesToNfa.Values.Contains((IReadOnlyCollection<State>)mergeStates);
+                    State newDfaState = null;
+                    foreach(var dfaState in dfaStatesToNfa.Keys)
                     {
-                        var states = kv.Value;
-                        if(states.Count != targetStates.Count 
-                            || states.GetHashCode() != targetStates.GetHashCode()
-                            || states.Intersect(targetStates).Count() != states.Count)
+                        var prevNfaStates = dfaStatesToNfa[dfaState];
+                        if (prevNfaStates.Count == mergeStates.Count &&
+                            prevNfaStates.SequenceEqual(mergeStates))
                         {
-                            finalDfaState = kv.Key;
+                            newDfaState = dfaState;
                             break;
                         }
                     }
-
-                    if(finalDfaState == null)
+                    if(newDfaState == null)
                     {
-                        finalDfaState = target.AddState();
-                        foreach(var state in targetStates)
-                        {
-                            if (state.IsFinalState)
-                                finalDfaState.IsFinalState = true;
-                            statesMap.GroupAdd(finalDfaState, state);
-                        }
+                        newDfaState = dfa.AddState();
+                        dfaStatesToNfa.AddRange(newDfaState, mergeStates);
+                        newDfaState.IsFinalState = mergeStates.Any(state => state.IsFinalState);
                     }
-                    target.AddTransition(transitionClass);
+
+                    var dfaTransition = dfa.AddTransition(curDfaState, newDfaState, transitionClass.TransitionType);
+                    dfaTransition.Capture = transitionClass.Capture;
+                    dfaTransition.Range = transitionClass.Range;
+                    dfaTransition.Index = transitionClass.Index;
+                    mergeStates.Clear();
                 }
+                transitionClasses.Clear();                
+                nfaTransitionsToDfa.Clear();
             }
 
-            return target;
+            return dfa;
         }
     }
 

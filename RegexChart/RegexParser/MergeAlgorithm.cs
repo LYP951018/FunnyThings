@@ -57,15 +57,12 @@ namespace RegexChart.RegexParser
                 return ret;
             }
             else
-            {
-                throw new ArgumentException($"Cannot find the referenced expression.{expression.Name}");
-            }
+                throw new ArgumentException($"Cannot find the referenced expression {expression.Name}.");
         }
 
         public override Expression Apply(NegativeExpression expression, MergeParameter param)
         {
-            return new NegativeExpression(
-                Invoke(expression.Matched, param));
+            return new NegativeExpression(Invoke(expression.Matched, param));
         }
 
         public override Expression Apply(MatchExpression expression, MergeParameter param)

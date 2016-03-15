@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
@@ -22,8 +18,7 @@ namespace RegexChart.RegexParser
             {
                 Begin = end;
                 End = Begin;
-            }
-            
+            }           
         }
 
         public CharRange(char c)
@@ -60,8 +55,12 @@ namespace RegexChart.RegexParser
             var charObj = (CharRange)obj;
             if (this.Equals(charObj)) return 0;
             if (this < charObj) return -1;
-            return 1;
-            
+            return 1;           
+        }
+
+        public override int GetHashCode()
+        {
+            return Begin.GetHashCode() << 4 ^ End.GetHashCode() << 8;
         }
 
         public static bool operator ==(CharRange lhs,CharRange rhs)

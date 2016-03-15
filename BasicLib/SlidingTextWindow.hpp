@@ -1,7 +1,7 @@
 #pragma once
 
-#include "StringType.h"
-#include "Nonable.h"
+#include "StringType.hpp"
+#include "Nonable.hpp"
 
 //TODO: remove limits
 #include <limits>

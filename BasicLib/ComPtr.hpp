@@ -2,7 +2,7 @@
 
 #include <type_traits> // for is_convertible
 #include <utility>
-#include "Assert.h"
+#include "Assert.hpp"
 
 namespace funny
 {

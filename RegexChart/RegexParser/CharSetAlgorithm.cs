@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RegexChart.RegexParser
+﻿namespace RegexChart.RegexParser
 {
     public class NormalizedCharSet
     {
@@ -26,7 +20,7 @@ namespace RegexChart.RegexParser
         public abstract void Process(CharSetExpression expression , NormalizedCharSet target, CharRange range);
 
         //ranges == expression.Ranges
-        public void Loop(CharSetExpression expression, FlatSet<CharRange> ranges,NormalizedCharSet target)
+        public void Loop(CharSetExpression expression, FlatSet<CharRange> ranges, NormalizedCharSet target)
         {
             if(expression.IsReverse)
             {

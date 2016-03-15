@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Basic.h"
-#include "SlidingTextWindow.h"
-#include "SyntaxDiagnosticInfo.h"
+#include "Basic.hpp"
+#include "SlidingTextWindow.hpp"
+#include "SyntaxDiagnosticInfo.hpp"
 
 #include <vector>
 

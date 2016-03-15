@@ -10,4 +10,5 @@ namespace funny
 	using int64 = std::int64_t;
 	using uint64 = std::uint64_t;
 
+    using Byte = unsigned char;
 }

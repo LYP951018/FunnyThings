@@ -1,8 +1,7 @@
 #pragma once
 
-#include "StringType.h"
-#include "Basic.h"
-//TODO: remove the include of <unordered_map>?
+#include "StringType.hpp"
+#include "Basic.hpp"
 #include <unordered_map>
 #include <boost\optional.hpp>
 

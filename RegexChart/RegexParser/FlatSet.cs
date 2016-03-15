@@ -2,9 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
@@ -13,6 +10,7 @@ namespace RegexChart.RegexParser
     {
         private TValue[] values;
         private int _size;
+
         public int Capacity
         {
             get

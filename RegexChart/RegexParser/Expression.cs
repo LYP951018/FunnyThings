@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RegexChart.RegexParser
 {
@@ -217,8 +214,7 @@ namespace RegexChart.RegexParser
 
         public bool Equals(AlternativeExpression obj)
         {
-            return
-                Left.Equals(obj.Left) &&
+            return Left.Equals(obj.Left) &&
                 Right.Equals(obj.Right);
         }
     }

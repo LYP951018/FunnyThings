@@ -1,4 +1,4 @@
-#include "SyntaxDiagnosticInfo.h"
+#include "SyntaxDiagnosticInfo.hpp"
 
 #include <sstream>
 
