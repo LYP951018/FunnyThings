@@ -1,0 +1,3 @@
+[submodule "YupeiLibrary"]
+	path = YupeiLibrary
+	url = https://github.com/LYP951018/YupeiLibrary.git
