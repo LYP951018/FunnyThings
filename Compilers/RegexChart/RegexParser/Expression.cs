@@ -368,7 +368,7 @@ namespace RegexChart.RegexParser
 
     public class RegexExpression
     {
-        public Dictionary<string,Expression> Definitions { get; set; }
+        public Dictionary<string, Expression> Definitions { get; set; }
         public Expression Main { get; set; }
 
         public Expression Merge()

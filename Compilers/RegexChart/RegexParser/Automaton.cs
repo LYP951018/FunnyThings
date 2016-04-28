@@ -179,7 +179,7 @@ namespace RegexChart.RegexParser
     {
         public List<State> States { get; } = new List<State>();
         public List<Transition> Transitions { get; } = new List<Transition>();
-        public List<string> CaptureNames { get; } = new List<string>();
+        public List<string> CaptureNames { get; set; } = new List<string>();
         public State StartState { get; set; }
 
         public State AddState()
@@ -237,8 +237,8 @@ namespace RegexChart.RegexParser
         public static Automaton RemoveEpsilon(Automaton source)
         {
             //标记所有输入的边都没有消耗字符的状态
-            //TODO: copy captured names
             var nfa = new Automaton();
+            nfa.CaptureNames = source.CaptureNames;
             var newStartstate = nfa.AddState();
             nfa.StartState = newStartstate;
             List<Transition> transitions = new List<Transition>();
@@ -304,6 +304,7 @@ namespace RegexChart.RegexParser
         public static Automaton NfaToDfa(Automaton nfa, out MultiValueDictionary<State, State> dfaStatesToNfa)
         {
             var dfa = new Automaton();
+            dfa.CaptureNames = nfa.CaptureNames;
             var dfaStartState = dfa.AddState();
             dfa.StartState = dfaStartState;
             var nfaTransitionsToDfa = new MultiValueDictionary<Transition, Transition>();

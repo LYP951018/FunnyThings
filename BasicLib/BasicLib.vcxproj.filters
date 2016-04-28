@@ -15,15 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HandleWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HandleWrappers.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32Wrappers.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AbstractLexer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -46,9 +37,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SyntaxDiagnosticInfo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WinDef.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

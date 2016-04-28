@@ -122,20 +122,21 @@
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Basic.hpp" />
     <ClInclude Include="ComPtr.hpp" />
-    <ClInclude Include="HandleWrapper.hpp" />
-    <ClInclude Include="HandleWrappers.hpp" />
     <ClInclude Include="Nonable.hpp" />
     <ClInclude Include="SlidingTextWindow.hpp" />
     <ClInclude Include="StringType.hpp" />
     <ClInclude Include="SyntaxDiagnosticInfo.hpp" />
-    <ClInclude Include="Win32Wrappers.hpp" />
-    <ClInclude Include="WinDef.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SlidingTextWindow.cpp" />
     <ClCompile Include="StringType.cpp" />
     <ClCompile Include="SyntaxDiagnosticInfo.cpp" />
     <ClCompile Include="Win32Wrappers.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\YupeiLibrary\Source\Library\YupeiLibrary.vcxproj">
+      <Project>{2a77a2f0-5b90-494f-b890-6ce55407b5aa}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

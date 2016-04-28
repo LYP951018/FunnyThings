@@ -107,7 +107,7 @@ namespace RegexChart.RegexParser
             var nfa = new EpsilonNfa(param);
             var body = Invoke(expression.Matched, param);
             param.AddTransition(nfa.Start, body.Start, Transition.Type.Negative);
-            param.AddTransition(body.End, nfa.End, Transition.Type.Negative);
+            param.AddTransition(body.End, nfa.End, Transition.Type.End);
             param.AddTransition(nfa.Start, nfa.End, Transition.Type.NegativeFail);
             return nfa;
         }
