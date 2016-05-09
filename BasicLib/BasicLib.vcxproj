@@ -133,11 +133,6 @@
     <ClCompile Include="SyntaxDiagnosticInfo.cpp" />
     <ClCompile Include="Win32Wrappers.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\YupeiLibrary\Source\Library\YupeiLibrary.vcxproj">
-      <Project>{2a77a2f0-5b90-494f-b890-6ce55407b5aa}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

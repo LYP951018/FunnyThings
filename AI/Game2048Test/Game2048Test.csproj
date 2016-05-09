@@ -54,7 +54,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AI\2048\2048.csproj">
+    <ProjectReference Include="..\2048\2048.csproj">
       <Project>{157fc353-e7ad-4c07-977a-4849d901619c}</Project>
       <Name>2048</Name>
     </ProjectReference>
