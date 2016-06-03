@@ -185,31 +185,129 @@ namespace Game2048Test
         }
 
         [TestMethod]
+        public void TestMoveLeftMulti()
+        {
+            var game = new Game();
+            game.SetNumber(1, 0, 2);
+            game.SetNumber(1, 1, 2);
+            game.SetNumber(1, 2, 4);
+            game.Update(Direction.Left);
+            Assert.AreEqual<uint>(4, game.GetNumber(1, 0));
+            Assert.AreEqual<uint>(4, game.GetNumber(1, 1));
+            Assert.AreEqual<uint>(0, game.GetNumber(1, 2));
+            Assert.AreEqual<uint>(0, game.GetNumber(1, 3));
+            var info = game.Transformations[1, 1];
+            Assert.AreEqual(new Coordinate(1, 0), info.Destination);
+            Assert.AreEqual<uint>(2, info.PreviousNumber);
+            info = game.Transformations[1, 0];
+            Assert.AreEqual(true, info.WasNew);
+
+            game.Update(Direction.Left);
+            Assert.AreEqual<uint>(8, game.GetNumber(1, 0));
+            Assert.AreEqual<uint>(0, game.GetNumber(1, 1));
+            Assert.AreEqual<uint>(0, game.GetNumber(1, 2));
+            Assert.AreEqual<uint>(0, game.GetNumber(1, 3));
+        }
+
+        [TestMethod]
         public void TestMixed()
         {
             var game = new Game();
             game.SetNumber(3, 1, 2);
             game.SetNumber(3, 2, 2);
             game.SetNumber(3, 3, 4);
-            game.Update(Direction.Up);
+            var res = game.Update(Direction.Up);
             Assert.AreEqual<uint>(2, game.GetNumber(0, 1));
             Assert.AreEqual<uint>(2, game.GetNumber(0, 2));
             Assert.AreEqual<uint>(4, game.GetNumber(0, 3));
             Assert.AreEqual(new Coordinate(0, 1), game.Transformations[3, 1].Destination);
             Assert.AreEqual(new Coordinate(0, 2), game.Transformations[3, 2].Destination);
             Assert.AreEqual(new Coordinate(0, 3), game.Transformations[3, 3].Destination);
-            game.Update(Direction.Right);
+            Assert.AreEqual(-1, game.Smoothness());
+            Assert.AreEqual(1, game.Coherence());
+            Assert.AreEqual<uint>(0, res.MergedCount);
+            res = game.Update(Direction.Right);
             Assert.AreEqual<uint>(0, game.GetNumber(0, 1));
             Assert.AreEqual<uint>(4, game.GetNumber(0, 2));
             Assert.AreEqual<uint>(4, game.GetNumber(0, 3));
+            Assert.AreEqual<uint>(1, res.MergedCount);
             Assert.AreEqual(new Coordinate(0, 2), game.Transformations[0, 1].Destination);
             Assert.AreEqual(true, game.Transformations[0, 2].WasNew);
-            game.Update(Direction.Left);
+            Assert.AreEqual(1, game.Coherence());
+            res = game.Update(Direction.Left);
             Assert.AreEqual<uint>(8, game.GetNumber(0, 0));
             Assert.AreEqual<uint>(0, game.GetNumber(0, 2));
             Assert.AreEqual<uint>(0, game.GetNumber(0, 3));
             Assert.AreEqual(new Coordinate(0, 0), game.Transformations[0, 2].Destination);
             Assert.AreEqual(true, game.Transformations[0, 0].WasNew);
+            Assert.AreEqual<uint>(1, res.MergedCount);
+        }
+
+        [TestMethod]
+        public void TestMonotonicity()
+        {
+            var game = new Game();
+            game.AddCellTrivial(2, 0, 2);
+            game.AddCellTrivial(0, 3, 1);
+            Assert.AreEqual(-3, game.Monotonicity());
+            //game.AddCellTrivial(0, 2, 2);
+            //Assert.AreEqual(1, game.Monotonicity());
+            //game.AddCellTrivial(0, 2, 3);
+            //Assert.AreEqual(2, game.Monotonicity());
+            //game.AddCellTrivial(0, 0, 3);
+            //Assert.AreEqual(1, game.Monotonicity());
+            //game.AddCellTrivial(1, 0, 4);
+            //Assert.AreEqual(2, game.Monotonicity());
+        }
+
+        [TestMethod]
+        public void TestBitmap()
+        {
+            var game = new Game();
+            game.AddCellTrivial(0, 0, 1);
+            game.AddCellTrivial(0, 1, 2);
+            Assert.AreEqual(0x3, game.GetBitmap());
+        }
+
+        [TestMethod]
+        public void TestSmoothness()
+        {
+            var game = new Game();
+            game.AddCellTrivial(0, 0, 1);
+            game.AddCellTrivial(0, 1, 1);
+            game.AddCellTrivial(0, 2, 2);
+            Assert.AreEqual(-1, game.Smoothness());
+            //game.AddCellTrivial(1, 0, 2);
+            //Assert.AreEqual(-1, game.Smoothness());
+            //game.AddCellTrivial(1, 1, 3);
+            //Assert.AreEqual(-4, game.Smoothness());
+        }
+
+        [TestMethod]
+        public void TestDispersion()
+        {
+            var game = new Game();
+            game.AddCellTrivial(new Coordinate(0, 0), 1);
+            Assert.AreEqual(1, game.Dispersion());
+            game.AddCellTrivial(new Coordinate(0, 1), 1);
+            Assert.AreEqual(1, game.Dispersion());
+            game.AddCellTrivial(new Coordinate(3, 1), 1);
+            Assert.AreEqual(2, game.Dispersion());
+            game.AddCellTrivial(new Coordinate(3, 2), 1);
+            Assert.AreEqual(2, game.Dispersion());
+        }
+
+        [TestMethod]
+        public unsafe void TestStaticList()
+        {
+            int* ptr = stackalloc int[16];
+            var list = new StaticList(ptr);
+            Assert.IsTrue(ptr == list.Waterline);
+            list.Add(2);
+            Assert.IsTrue(ptr + 1 == list.Waterline);
+            Assert.IsTrue(list[0] == 2);
+            list.Pop();
+            Assert.IsTrue(ptr == list.Waterline);
         }
     }
 }

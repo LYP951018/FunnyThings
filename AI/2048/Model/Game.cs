@@ -24,6 +24,8 @@ namespace _2048.Model
     public struct ResultInfo
     {
         public bool HasMoved { get; set; }
+        public bool HasWon { get; set; }
+        public uint MergedCount { get; set; }
     }
 
     public class Game
@@ -32,17 +34,43 @@ namespace _2048.Model
         public const int BoardHeight = 4;
 
         private byte[,] _numbers = new byte[BoardHeight, BoardWidth];
-        private TransformInfo[,] _transformInfo = new TransformInfo[BoardHeight, BoardWidth];
+        static private TransformInfo[,] _transformInfo = new TransformInfo[BoardHeight, BoardWidth];
 
         private byte[,] Numbers => _numbers;
         public TransformInfo[,] Transformations => _transformInfo;
 
-        private Direction _currentDirection;
+        private static readonly int[] _directions = new int[] { -4, 4, -1, 1 };
+        private static readonly int[] _rightSequence = new int[] { 2, 1, 0 };
+        private static readonly int[] _leftSequence = new int[] { 1, 2, 3 };
 
+        private Direction _currentDirection;
+        private Direction CurrentDirection
+        {
+            get
+            {
+                return _currentDirection;
+            }
+            set
+            {
+                _currentDirection = value;
+            }
+        }
         public Game()
         {
             ResetTransformation();
-            Logger("---------------------Game starts!-------------------------");
+            //Logger("---------------------Game starts!-------------------------");
+        }
+
+        public Game(Game other)
+        {
+            Array.Copy(other._numbers, _numbers, 16);
+            //Range(0, 4).ForEach(i => Range(0, 4).ForEach(j => _numbers[i, j] = other._numbers[i, j]));
+            //ResetTransformation();
+        }
+
+        public void Reset(Game other)
+        {
+            Array.Copy(other._numbers, _numbers, 16);
         }
 
         public void SetNumber(Coordinate c, uint v)
@@ -94,33 +122,21 @@ namespace _2048.Model
 
         public IEnumerable<uint> TraverseNumbers()
         {
-            foreach (var i in Range(0, _numbers.GetLength(0)))
-                foreach (var j in Range(0, _numbers.GetLength(1)))
+            for(int i = 0; i < BoardHeight; ++i)
+                for(int j = 0; j < BoardWidth; ++j)
                     yield return Convert(_numbers[i, j]);                   
         }
 
-        private IEnumerable<int> PositiveSequence(int minValue, int maxValue)
-        {
-            for (int i = minValue; i < maxValue; ++i)
-                yield return i;
-        }
-
-        private IEnumerable<int> NegativeSequence(int minValue, int maxValue)
-        {
-            for (int i = minValue; i < maxValue; ++i)
-                yield return maxValue - 1 - i;
-        }
-
-        private IEnumerable<int> GenerateSequence(int minValue, int maxValue)
+        private int[] GenerateSequence()
         {
             switch(_currentDirection)
             {
                 case Direction.Down:
                 case Direction.Right:
-                    return NegativeSequence(minValue, maxValue);
+                    return _rightSequence;
                 case Direction.Up:
                 case Direction.Left:
-                    return PositiveSequence(minValue, maxValue);
+                    return _leftSequence;
                 default:
                     throw new InvalidOperationException();
             }
@@ -188,7 +204,7 @@ namespace _2048.Model
             switch(_currentDirection)
             {
                 case Direction.Up:
-                    foreach(var i in Range(0, BoardHeight))
+                    for(int i = 0; i < BoardHeight; ++i)
                     {
                         vec <<= 8;
                         vec |= Numbers[i, columnOrRow];                       
@@ -202,7 +218,7 @@ namespace _2048.Model
                     }
                     break;
                 case Direction.Left:
-                    foreach (var i in Range(0, BoardHeight))
+                    for (int i = 0; i < BoardHeight; ++i)
                     {
                         vec <<= 8;
                         vec |= Numbers[columnOrRow, i];                       
@@ -269,15 +285,235 @@ namespace _2048.Model
             return hasSolution;
         }
 
+        public IEnumerable<Coordinate> GetEmptyCells()
+        {
+            return from i in Range(0, 4)
+                   from j in Range(0, 4)
+                   where _numbers[i, j] == 0
+                   select new Coordinate(i, j);
+        }
+
+        private int SmoothnessInternal(uint list)
+        {
+            int smoothness = 0;
+            if (list > 0)
+            {
+                const uint mask = 0xFF;
+                var previous = (byte)(list & mask);
+                list >>= 8;
+                byte current;
+                while (list != 0)
+                {
+                    current = (byte)(list & mask);
+                    smoothness -= Math.Abs(current - previous);
+                    list >>= 8;
+                    previous = current;
+                }
+            }
+            return smoothness;
+        }
+
+        public int Smoothness()
+        {
+            int smoothness = 0;
+            uint list = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                for (int j = 0; j < 4; ++j)
+                {
+                    var number = _numbers[i, j];
+                    if (number != 0)
+                    {
+                        list <<= 8;
+                        list |= number;
+                    }
+                }
+                smoothness += SmoothnessInternal(list);
+                list = 0;
+            }
+
+            for (int i = 0; i < 4; ++i)
+            {
+                for (int j = 0; j < 4; ++j)
+                {
+                    var number = _numbers[j, i];
+                    if (number != 0)
+                    {
+                        list <<= 8;
+                        list |= number;
+                    }
+                }
+                smoothness += SmoothnessInternal(list);
+                list = 0;
+            }
+            return smoothness;
+        }
+
+        public int Monotonicity()
+        {
+            int left = 0, right = 0, up = 0, down = 0;
+            for(int i = 0; i < 4; ++i)
+            {
+                int current = 0;
+                int next = 1;
+                while(next < 4)
+                {
+                    while (next < 4 && _numbers[i, next] == 0)
+                        ++next;
+                    if (next >= 4) --next;
+                    var currentValue = _numbers[i, current];
+                    var nextValue = _numbers[i, next];
+                    if (currentValue < nextValue)
+                        left += currentValue - nextValue;
+                    else
+                        right += nextValue - currentValue;
+                    current = next;
+                    ++next;
+                }                
+            }
+            for (int i = 0; i < 4; ++i)
+            {
+                int current = 0;
+                int next = 1;
+                while (next < 4)
+                {
+                    while (next < 4 && _numbers[next, i] == 0)
+                        ++next;
+                    if (next >= 4) --next;
+                    var currentValue = _numbers[current, i];
+                    var nextValue = _numbers[next, i];
+                    if (currentValue < nextValue)
+                        up += currentValue - nextValue;
+                    else
+                        down += nextValue - currentValue;
+                    current = next;
+                    ++next;
+                }
+            }
+            return Math.Max(left, right) + Math.Max(up, down);
+        }
+
+        public int MaxNumber()
+        {
+            int ret = int.MinValue;
+            for(int i = 0; i < 4; ++i)
+                for(int j = 0; j < 4; ++j)
+                    ret = Math.Max(ret, _numbers[i, j]);
+            return ret;
+        }
+
+        public int Coherence()
+        {
+            var directions = new Direction[] { Direction.Up, Direction.Left, Direction.Right, Direction.Down };
+            var game = new Game(this);
+            int ret = int.MinValue;
+            foreach (var direction in directions)
+            {
+                ret = Math.Max((int)game.Update(direction).MergedCount, ret);
+                for (int i = 0; i < 4; ++i)
+                    for (int j = 0; j < 4; ++j)
+                        game.AddCellTrivial(i, j, _numbers[i, j]);
+            }
+            return ret;
+        }
+
+        private unsafe void PushStack(ref int* waterline, int value)
+        {
+            *waterline = value;
+            ++waterline;
+        }
+
+        private unsafe int PopStack(ref int* waterline)
+        {
+            --waterline;
+            return *waterline;
+        }
+
+        private unsafe void DispersionInternal(ref ushort hasVisited, int* stack, ref int* waterline)
+        {
+            //找到一个起点。
+            var visited = hasVisited;
+            int pos = 0;
+            ushort mask = 1;
+            while ((visited & mask) != 0)
+            {
+                mask <<= 1;
+                ++pos;
+            }
+
+            PushStack(ref waterline, pos);
+            hasVisited |= (ushort)(1 << pos);
+            while(stack != waterline)
+            {
+                var newPos = PopStack(ref waterline);
+                for(int i = 0; i < 4; ++i)
+                {
+                    var p = newPos + _directions[i];
+                    if (p >= 0 && p < 16)
+                    {
+                        if ((hasVisited & (ushort)(1 << p)) == 0)
+                        {
+                            hasVisited |= (ushort)(1 << p);
+                            //var number = _numbers[p / 4, p % 4];
+                            //Debug.Assert(number != 0);                            
+                            PushStack(ref waterline, p);
+                        }
+                    }                                            
+                }
+            }
+        }
+
+        //分散度
+        public unsafe int Dispersion()
+        {
+            //找图的连通分量。从每个顶点做 DFS，把经过的顶点都做以标记。      
+            ushort hasVisited = 0;
+            int res = 0;
+            //预先将为 0 的顶点标记位已访问。
+            for(int i = 0; i < 4; ++i)
+                for(int j = 0; j < 4; ++j)
+                    if (_numbers[i, j] == 0)
+                        hasVisited |= (ushort)(1 << (i * 4) + j);
+
+            var stack = stackalloc int[16];
+            int* waterline = stack;
+            while (hasVisited != 0xFFFF)
+            {
+                DispersionInternal(ref hasVisited, stack, ref waterline);
+                ++res;
+            }
+            return res;
+        }
+
+        public override int GetHashCode()
+        {
+            return Numbers.GetHashCode();
+        }
+       
+        public bool Equals(Game other)
+        {
+            for (int i = 0; i < BoardHeight; ++i)
+                for (int j = 0; j < BoardWidth; ++j)
+                    if (Numbers[i, j] != other.Numbers[i, j]) return false;
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null) return false;
+            if (obj.GetType() != GetType()) return false;
+            return Equals(obj as Game);
+        }
+
         public ResultInfo Update(Direction direction)
         {
             ResetTransformation();
-            _currentDirection = direction;
-            Logger($"Moved to {direction}");
+            CurrentDirection = direction;
+            //Logger($"Moved to {direction}");
             var resultInfo = new ResultInfo();
             for (int j = 0; j < 4; ++j)
             {              
-                foreach (var i in GenerateSequence(1, BoardWidth))
+                foreach (var i in GenerateSequence())
                 {
                     var vec = PackAsUInt(j);
                     var currentPos = MakeCoordinate(i, j);
@@ -292,44 +528,40 @@ namespace _2048.Model
                         {
                             MergeCell(currentPos, frontPrevPos);
                             resultInfo.HasMoved = true;
-                            Logger($"{currentPos} combined with 1 {frontPrevPos}");
+                            //Logger($"{currentPos} combined with 1 {frontPrevPos}");
                         }
                         else 
                         {
                             var front = Numbers.GetValue(frontPos);
                             if (front == current)
                             {
+                                if (front == 10)
+                                    resultInfo.HasWon = true;
                                 resultInfo.HasMoved = true;
                                 MergeCell(currentPos, frontPos);
-                                Logger($"{currentPos} combined with 2 {frontPos}");
+                                resultInfo.MergedCount += 1;
+                                //Logger($"{currentPos} combined with 2 {frontPos}");                           
                             }                                                  
                         }
                     }
                 }
             }
-            var sb = new StringBuilder();
-            int i2 = 0;
-            foreach(var n in TraverseNumbers())
-            {
-                sb.Append(n);
-                ++i2;
-                if (i2 % 4 == 0)
-                    sb.Append('\n');
-            }
-            Logger(sb.ToString());
+            //LogGrid();
             return resultInfo;
+        }
+
+        private void ResetInternal(ref TransformInfo info)
+        {
+            info.Destination = Coordinate.Nowhere;
+            info.WasNew = false;
+            info.PreviousNumber = byte.MaxValue;
         }
 
         public void ResetTransformation()
         {
-            foreach (var i in Range(0, BoardHeight))
-                foreach (var j in Range(0, BoardWidth))
-                    Transformations[i, j] = new TransformInfo
-                    {
-                        Destination = Coordinate.Nowhere,
-                        WasNew = false,
-                        PreviousNumber = byte.MaxValue
-                    };
+            for (int i = 0; i < BoardHeight; ++i)
+                for (int j = 0; j < BoardHeight; ++j)
+                    ResetInternal(ref Transformations[i, j]);
         }
 
         private Coordinate MakeCoordinate(int i, int j)
@@ -359,6 +591,47 @@ namespace _2048.Model
             });
         }
 
+        public void RemoveCellTrivial(Coordinate c)
+        {
+            _numbers[c.X, c.Y] = 0;
+        }
+
+        public void RemoveCellTrivial(int i, int j)
+        {
+            _numbers[i, j] = 0;
+        }
+
+        public void AddCellTrivial(int i, int j, byte value)
+        {
+            _numbers[i, j] = value;
+        }
+
+        public void AddCellTrivial(Coordinate c, byte value)
+        {
+            _numbers[c.X, c.Y] = value;
+        }
+
+        public ushort GetBitmap()
+        {
+            ushort res = 0;
+            for(int i = 3; i >= 0; --i)
+                for(int j = 3; j >= 0; --j)
+                {
+                    res <<= 1;
+                    res |= (ushort)(_numbers[i, j] == 0 ? 0 : 1);
+                }
+            return res;
+        }
+
+        public int EmptyNumberCount()
+        {
+            int count = 0;
+            for (int i = 0; i < 4; ++i)
+                for (int j = 0; j < 4; ++j)
+                    if (_numbers[i, j] == 0) ++count;
+            return count;
+        }
+
         private bool CoundBeMerged(Coordinate backCell, Coordinate frontCell)
         {
             var desInfo = Transformations.GetValue(frontCell);
@@ -378,12 +651,8 @@ namespace _2048.Model
                 bool wasNew = frontValue == backValue;
                 Numbers.Set2DValue(frontCell, (byte)(backValue + (wasNew ? 1 : 0)));
                 Numbers.Set2DValue(backCell, default(byte));
-                Transformations.Set2DValue(frontCell, new TransformInfo
-                {
-                    WasNew = wasNew,
-                    Destination = Coordinate.Nowhere,
-                    PreviousNumber = byte.MaxValue
-                });
+                //ResetInternal(ref Transformations[frontCell.X, frontCell.Y]);
+                Transformations[frontCell.X, frontCell.Y].WasNew = wasNew;
                 Transformations.Set2DValue(backCell, new TransformInfo
                 {
                     WasNew = false,
@@ -409,16 +678,31 @@ namespace _2048.Model
 
         private static Random rand = new Random((int)DateTime.Now.ToBinary());
 
-        public void Logger(string lines)
+        [Conditional("DEBUG")]
+        public void LogGrid()
         {
-#if DEBUG
+            var sb = new StringBuilder();
+            int i2 = 0;
+            foreach (var n in TraverseNumbers())
+            {
+                sb.Append(n);
+                ++i2;
+                if (i2 % 4 == 0)
+                    sb.Append('\n');
+            }
+            Logger(sb.ToString());
+        }
+
+        [Conditional("DEBUG")]
+        static public void Logger(string lines)
+        {
+
             // Write the string to a file.append mode is enabled so that the log
             // lines get appended to  test.txt than wiping content and writing the log
             using (var file = new StreamWriter(".\\log.txt", true))
             {
                 file.WriteLine(lines);
             }
-#endif
         }
     }
 }

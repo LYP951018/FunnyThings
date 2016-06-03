@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_2048"
         mc:Ignorable="d"
-        Title="MainWindow" Height="700" Width="560" KeyDown="Window_KeyDown">
+        Height="700" Width="560" KeyDown="Window_KeyDown" Title="Yupei's 2048">
     <Grid Margin="5, 20, 5, 10" HorizontalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,7 +17,7 @@
             <TextBlock 
                    Text="Join the numbers and get to the 2048 tile!" Foreground="#776e65" FontSize="15" VerticalAlignment="Bottom"/>
             <Border Margin="20, 0, 0, 0" CornerRadius="5" Background="#8f7a66">
-                <Button HorizontalAlignment="Right" Padding="10, 5" BorderThickness="0" Background="Transparent" Foreground="#f9f6f2" Content="New Game" FontSize="18"/>
+                <Button HorizontalAlignment="Right" Padding="10, 5" BorderThickness="0" Background="Transparent" Foreground="#f9f6f2" Content="Auto Play" FontSize="18" Click="Button_Click"/>
             </Border>
         </StackPanel>
         <Border Width="500" Height="500" Grid.Row="2" Margin="10, 20, 10, 10" ClipToBounds="True" CornerRadius="5" Padding="5" Background="#bbada0">

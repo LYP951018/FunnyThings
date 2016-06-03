@@ -9,8 +9,11 @@ namespace _2048
         private ObservableCollection<uint> _cells = new ObservableCollection<uint>();
         public ObservableCollection<uint> Boards => _cells;
         private Game _game = new Game();
-        private Game TheGame => _game;
+        public Game TheGame => _game;
         private bool _hasMoved;
+        private bool _hasWon;
+        public bool HasMoved => _hasMoved;
+        public bool HasWon => _hasWon;
 
         public ViewModel()
         {
@@ -46,7 +49,9 @@ namespace _2048
 
         public TransformInfo[,] Move(Direction direction)
         {
-            _hasMoved = TheGame.Update(direction).HasMoved;
+            var res = TheGame.Update(direction);
+            _hasWon = res.HasWon;
+            _hasMoved = res.HasMoved;
             return TheGame.Transformations;
         }        
     }

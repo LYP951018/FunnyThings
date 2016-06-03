@@ -1,4 +1,7 @@
 ﻿using _2048.Model;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace _2048
 {
@@ -7,6 +10,11 @@ namespace _2048
         static public int ToIndex(this Coordinate c)
         {
             return c.X * Game.BoardHeight + c.Y;
+        }
+
+        static public int ToIndex(int x, int y)
+        {
+            return x * Game.BoardHeight + y;
         }
 
         static public Coordinate ToCoordinate(int index)
@@ -26,6 +34,26 @@ namespace _2048
             var oldValue = arr.GetValue(c);
             arr[c.X, c.Y] = newValue;
             return oldValue;
+        }
+
+        static public void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> action)
+        {
+            foreach (var x in source)
+                action(x);
+        }
+
+        static public void Communicate<TSource>(this IEnumerable<TSource> source, Action<TSource, TSource> action)
+        {
+            if (source.Any())
+            {
+                TSource previous = source.First(), current;
+                foreach (var v in source.Skip(1))
+                {
+                    current = v;
+                    action(previous, current);
+                    previous = current;
+                }
+            }
         }
     }
 }

@@ -181,28 +181,58 @@ namespace _2048
             return child;
         }
 
-        private async void Window_KeyDown(object sender, KeyEventArgs e)
+        public /*async */void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            Direction direction;
-            switch (e.Key)
-            {
-                case Key.Right:
-                    direction = Direction.Right;
-                    break;
-                case Key.Left:
-                    direction = Direction.Left;
-                    break;
-                case Key.Down:
-                    direction = Direction.Down;
-                    break;
-                case Key.Up:
-                    direction = Direction.Up;
-                    break;
-                default:
+            //Direction direction;
+            //switch (e.Key)
+            //{
+            //    case Key.Right:
+            //        direction = Direction.Right;
+            //        break;
+            //    case Key.Left:
+            //        direction = Direction.Left;
+            //        break;
+            //    case Key.Down:
+            //        direction = Direction.Down;
+            //        break;
+            //    case Key.Up:
+            //        direction = Direction.Up;
+            //        break;
+            //    default:
+            //        return;
+            //}
+            //var transformations = _viewModel.Move(direction);
+            //await PlayAnimation(transformations);
+        }
+
+        private async void Button_Click(object sender, RoutedEventArgs e)
+        {
+            SearchResultInfo result = new SearchResultInfo();
+            Direction? direction = null;
+            while (true)
+            {                
+                await Task.Run(() =>
+                {
+                    var current = DateTime.Now;
+                    uint depth = 1;
+                    do
+                    {
+                        Game.Logger("---------------Yet another search.-------------------");
+                        result = GameAI.Search(depth, true, _viewModel.TheGame, int.MinValue, int.MaxValue);
+                        if (result.MoveDirection.HasValue)
+                            direction = result.MoveDirection.Value;
+                        else continue;
+                        ++depth;
+                    } while ((DateTime.Now - current).TotalSeconds <= 1.0);
+                });
+                Debug.Assert(direction.HasValue);
+                var transformations = _viewModel.Move(direction.Value);
+                if (_viewModel.HasWon)
                     return;
-            }
-            var transformations = _viewModel.Move(direction);
-            await PlayAnimation(transformations);
+                if (!_viewModel.HasMoved)
+                    Debug.Assert(false);
+                await PlayAnimation(transformations);
+            }           
         }
     }
 }
