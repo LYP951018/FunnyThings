@@ -3,7 +3,6 @@ using Protocol;
 using Protocol.Client;
 using Protocol.Server;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -11,7 +10,6 @@ using System.Threading.Tasks;
 
 using ServerProtocol = Protocol.Server;
 using ClientProtocol = Protocol.Client;
-using Newtonsoft.Json.Linq;
 
 namespace Client
 {
@@ -41,15 +39,12 @@ namespace Client
     {
         private Timer _timer;
         private int _userId;
-        private MessageHandler _messageHandler = new MessageHandler(true);
-        private Dictionary<ulong, ClientProtocol.Packet> _messages = new Dictionary<ulong, ClientProtocol.Packet>();
-        public Dictionary<ulong, ClientProtocol.Packet> Messages => _messages;
-        private object _sync = new object();
+        private TcpClient _client = new TcpClient();
 
-        public event EventHandler<PayloadEventArgs<ServerProtocol.ChatBody>> OnGotMessage;
-        public event EventHandler<PayloadEventArgs<ServerProtocol.InfoBody>> OnGotInfo;
-        public event EventHandler<PayloadEventArgs<ServerProtocol.ErrorBody>> OnGotError;
-        public event EventHandler<PayloadEventArgs<ServerProtocol.NewBodyOnlineBody>> OnGotNewBody;
+        public event EventHandler<ChatEventArgs> OnGotMessage;
+        public event EventHandler<InfoEventArgs> OnGotInfo;
+        public event EventHandler<ErrorEventArgs> OnGotError;
+        public event EventHandler<NewBodyOnlineEventArgs> OnGotNewBody;
 
         public ChatClient(int id)
         {
@@ -60,143 +55,81 @@ namespace Client
 
         public void LogOn()
         {
-            SendClientMessage(
-                new ClientProtocol.Packet
-                {
-                    Kind = ClientProtocol.MessageKind.LogOn,
-                    Body = new ClientProtocol.LogOnBody
-                    {
-                        UserId = _userId,
-                    }
-                });
-        }
-
-        private async void SendClientMessage(ClientProtocol.Packet cm)
-        {
-            await _messageHandler.SendMessage(IPAddress.Parse(Config.ServerIPAddress),
-                cm).ContinueWith(t =>
+            MessageHandler.SendMessage(_client, new ClientProtocol.PacketHeader
             {
-                lock(_sync)
-                {
-                    _messages.Add(t.Result, cm);
-                }               
-            });
+                UserId = _userId,
+                Kind = ClientProtocol.MessageKind.LogOn
+            },
+            new LogOnPacket());
         }
 
-        public void SendMessage(string message, int desId)
+        public void Chat(int desId, string message)
         {
-            SendClientMessage(
-                new ClientProtocol.Packet
+            MessageHandler.SendMessage(_client,
+                new ClientProtocol.PacketHeader
                 {
+                    UserId = _userId,
                     Kind = ClientProtocol.MessageKind.Chat,                    
-                    Body = new ClientProtocol.ChatBody
-                    {
-                        UserId = _userId,
-                        DestinationId = desId,
-                        ChatContent = message
-                    }
+                },
+                new ClientProtocol.ChatPacket
+                {
+                    DestinationId = desId,
+                    ChatContent = message
                 });
         }
 
         public void LogOut()
         {
-            SendClientMessage(
-                new ClientProtocol.Packet
-                {
-                    Kind = ClientProtocol.MessageKind.LogOut,
-                    Body = new ClientProtocol.LogOutBody
-                    {
-                        UserId = _userId,
-                    }
-                });
+            MessageHandler.SendMessage(_client, new ClientProtocol.PacketHeader
+            {
+                UserId = _userId,
+                Kind = ClientProtocol.MessageKind.LogOut
+            },
+            new LogOutPacket());
         }
 
         private void SendHeartBeat()
         {
-            SendClientMessage(
-               new ClientProtocol.Packet
+            MessageHandler.SendMessage(_client,
+               new ClientProtocol.PacketHeader
                {
-                   Kind = ClientProtocol.MessageKind.HeartBeat,
-                   Body = new ClientProtocol.HeartBeatBody
-                   {
-                       UserId = _userId,
-                   }
-               });
+                   UserId = _userId,
+                   Kind = ClientProtocol.MessageKind.HeartBeat,                   
+               }, new HeartBeatPacket());
         }
 
-        public void ProcessServerMessage(ServerProtocol.Packet message)
+        private void ProcessServerMessage(string headerJson, string bodyJson, TcpClient client)
         {
-            var responseTo = message.SequenceNumberResponceTo;
-            Messages.Remove(responseTo);
-            switch (message.Kind)
+            var header = JsonConvert.DeserializeObject<ServerProtocol.PacketHeader>(headerJson);
+            switch (header.Kind)
             {
                 case ServerProtocol.MessageKind.Chat:                   
-                    OnGotMessage?.Invoke(this, new PayloadEventArgs<ServerProtocol.ChatBody>((ServerProtocol.ChatBody)message.Body));                   
+                    OnGotMessage?.Invoke(this, new ChatEventArgs(header, JsonConvert.DeserializeObject<ServerProtocol.ChatPacket>(bodyJson)));                   
                     break;
                 case ServerProtocol.MessageKind.Info:
-                    OnGotInfo?.Invoke(this, new PayloadEventArgs<ServerProtocol.InfoBody>((ServerProtocol.InfoBody)message.Body));
+                    OnGotInfo?.Invoke(this, new InfoEventArgs(header, JsonConvert.DeserializeObject<InfoPacket>(bodyJson)));
                     break;
                 case ServerProtocol.MessageKind.Error:
-                    OnGotError?.Invoke(this, new PayloadEventArgs<ServerProtocol.ErrorBody>((ServerProtocol.ErrorBody)message.Body));                    
+                    OnGotError?.Invoke(this, new ErrorEventArgs(header, JsonConvert.DeserializeObject<ErrorPacket>(bodyJson)));                    
                     break;
                 case ServerProtocol.MessageKind.NewBodyOnline:
-                    OnGotNewBody?.Invoke(this, new PayloadEventArgs<ServerProtocol.NewBodyOnlineBody>((ServerProtocol.NewBodyOnlineBody)message.Body));
+                    OnGotNewBody?.Invoke(this, new NewBodyOnlineEventArgs(header, JsonConvert.DeserializeObject<NewBodyOnlinePacket>(bodyJson)));
                     break;
                 default:
                     throw new InvalidOperationException();
             }
         }
         
-        public async void StartAsync()
+        public async Task StartAsync()
         {
-            var listener = new TcpListener(IPAddress.Any, Config.ClientPortNumber);
-            var buffer = new byte[1024];
-            listener.Start();
-            LogOn();
-            
-            while (true)
-            {
-                var client = await listener.AcceptTcpClientAsync();
-                ProcessServerMessage(await RestorePacket(await StringReader.Read(client.GetStream())));
-            }
+            await _client.ConnectAsync(IPAddress.Parse(Config.ServerIPAddress), Config.ServerPortNumber);
+            await Task.Run(() => MessageHandler.ReceiveMessage(_client, ProcessServerMessage));               
         }
 
-        private async Task<ServerProtocol.Packet> RestorePacket(string json)
+        public void Start()
         {
-            return await Task.Run(() =>
-            {
-                var packet = JsonConvert.DeserializeObject<ServerProtocol.Packet>(json);
-                var jBody = packet.Body as JObject;
-                switch (packet.Kind)
-                {
-                    case ServerProtocol.MessageKind.Error:
-                        packet.Body = jBody.ToObject<ErrorBody>();
-                        break;
-                    case ServerProtocol.MessageKind.Info:
-                        packet.Body = jBody.ToObject<InfoBody>();
-                        break;
-                    case ServerProtocol.MessageKind.NewBodyOnline:
-                        packet.Body = jBody.ToObject<NewBodyOnlineBody>();
-                        break;
-                    case ServerProtocol.MessageKind.Chat:
-                        packet.Body = jBody.ToObject<ServerProtocol.ChatBody>();
-                        break;
-                }
-                return packet;
-            });
-        }
-
-        public async void Start()
-        {
-            var listener = new TcpListener(IPAddress.Any, Config.ClientPortNumber);
-            var buffer = new byte[1024];
-            while (true)
-            {
-                var client = listener.AcceptTcpClientAsync().Result;
-                ProcessServerMessage(
-                    await Task.Run(async ()
-                    => (ServerProtocol.Packet)JsonConvert.DeserializeObject(await StringReader.Read(client.GetStream()))));
-            }
+            _client.ConnectAsync(IPAddress.Parse(Config.ServerIPAddress), Config.ServerPortNumber).Wait();
+            MessageHandler.ReceiveMessage(_client, ProcessServerMessage);
         }
     }
 }

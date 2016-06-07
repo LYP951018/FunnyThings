@@ -1,8 +1,6 @@
 ﻿using Client;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace ConsoleChatApp
 {
@@ -16,12 +14,39 @@ namespace ConsoleChatApp
             var client = new ChatClient(id);
             client.OnGotInfo += (o, e) =>
             {
-                Console.WriteLine("balala");
+                foreach (var f in e.OnlineUsers)
+                    Console.WriteLine(f);
             };
-            Task.Run(() => client.StartAsync());
+            client.OnGotMessage += (o, e) =>
+                Console.WriteLine($"Got message fron {e.SourceId}! {e.ChatContent}");
+            client.Start();
+            client.LogOn();
             while (true)
             {
-                Console.ReadLine();
+                var input = Console.ReadLine();
+                try
+                {
+                    var m = Regex.Match(input, @"^\s*(?<command>\S*)");
+                    if (m.Success)
+                    {
+                        var collection = m.Groups["command"];
+                        switch (collection.ToString())
+                        {
+                            case "sendto":
+                                var subStr = input.Substring(m.Index + "sendto".Length);
+                                var m2 = Regex.Match(subStr, @"\s*(?<id>\d+)\s+(?<message>.*)");
+                                if (m2.Success)
+                                {
+                                    client.Chat(Int32.Parse(m2.Groups["id"].ToString()), m2.Groups["message"].ToString());
+                                }
+                                break;
+                            default:
+                                Console.WriteLine("Unsupported!");
+                                break;
+                        }
+                    }
+                }
+                finally { }
             }
         }
     }

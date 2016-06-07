@@ -1,55 +1,73 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Diagnostics;
-using System.Net;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Protocol
 {
-    public class MessageHandler
+    public static class MessageHandler
     {
-        private ulong _sequenceNumber;
-        private bool _isClient;
-
-        public MessageHandler(bool isClient)
+        public static async void SendMessage(TcpClient client, object header, object body)
         {
-            _isClient = isClient;
-            _sequenceNumber = isClient ? 1ul : 2ul;
-        }
-
-        //TODO：使用继承
-        public async Task<ulong> SendMessage(IPAddress address, Client.Packet message)
-        {
-            var prevSequenceNumber = _sequenceNumber;
-            message.SequenceNumber = prevSequenceNumber;
-            //TODO: 这里需要同步吗？
-            ++_sequenceNumber;
-            await SendMessageInternal(address, message);
-            return prevSequenceNumber;
-        }
-
-        public async Task SendMessage(IPAddress address, Server.Packet message)
-        {
-            var prevSequenceNumber = _sequenceNumber;
-            message.SequenceNumber = prevSequenceNumber + 1;
-            ++_sequenceNumber;
-            await SendMessageInternal(address, message);
-        }
-
-        private async Task SendMessageInternal(IPAddress address, object message)
-        {
-            using (var client = new TcpClient())
+            var headerJson = JsonConvert.SerializeObject(header);
+            var bodyJson = JsonConvert.SerializeObject(body);
+            var builder = new StringBuilder(headerJson.Length + bodyJson.Length + 10);
+            var stringWriter = new StringWriter(builder);
+            using (var jsonWriter = new JsonTextWriter(stringWriter))
             {
-                client.ConnectAsync(address, _isClient ? Config.ServerPortNumber : Config.ClientPortNumber).Wait();
-                var bytes = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(message));
-                var lengthBytes = BitConverter.GetBytes(bytes.Length);
-                Debug.Assert(lengthBytes.Length == sizeof(int));
-                var ns = client.GetStream();
-                await ns.WriteAsync(lengthBytes, 0, sizeof(int));
-                await ns.WriteAsync(bytes, 0, bytes.Length);
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Header");
+                jsonWriter.WriteValue(headerJson);
+                jsonWriter.WritePropertyName("Body");
+                jsonWriter.WriteValue(bodyJson);
+                jsonWriter.WriteEndObject();
             }
+            var bytesToSend = Encoding.ASCII.GetBytes(builder.ToString());
+            var lengthBytes = BitConverter.GetBytes(bytesToSend.Length);
+            var ns = client.GetStream();
+            await ns.WriteAsync(lengthBytes, 0, lengthBytes.Length);
+            await ns.WriteAsync(bytesToSend, 0, bytesToSend.Length);
+        }
+
+        struct Packet
+        {
+            public string Header { get; set; }
+            public string Body { get; set; }
+        }
+
+        public static async void ReceiveMessage(TcpClient client, Action<string, string, TcpClient> action)
+        {
+            var buffer = new byte[2048];
+            var chars = new char[2048];
+            var builder = new StringBuilder();
+            var decoder = Encoding.ASCII.GetDecoder();
+            var ns = client.GetStream();
+            while (true)
+            {
+                builder.Clear();
+                if (!client.Connected)
+                    break;
+
+                //先得到总长度。
+                await ns.ReadAsync(buffer, 0, 4);
+                var totalLength = BitConverter.ToInt32(buffer, 0);
+                var bytesToRecv = totalLength;
+
+                do
+                {
+                    var bytesRead = await ns.ReadAsync(buffer, 0, Math.Min(bytesToRecv, buffer.Length));
+                    var charsCount = decoder.GetChars(buffer, 0, bytesRead, chars, 0);
+                    builder.Append(chars, 0, charsCount);
+                    bytesToRecv -= bytesRead;
+                } while (bytesToRecv > 0);
+
+                var json = builder.ToString();
+
+                var packet = JsonConvert.DeserializeObject<Packet>(json);
+
+                action(packet.Header, packet.Body, client);
+            }            
         }
     }
 }

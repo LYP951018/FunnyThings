@@ -12,30 +12,20 @@ using System.Linq;
 
 using ServerProtocol = Protocol.Server;
 using ClientProtocol = Protocol.Client;
-using System.Reflection;
-using Newtonsoft.Json.Linq;
 
 namespace Server
 {
     public class ChatServer
     {
-        class UserRecord
-        {
-            public DateTime LastHeartBeatTime { get; set; }
-            public IPAddress UserAddress { get; set; }
-        }
-
         private Timer _timer;
-        private MessageHandler _messageHandler = new MessageHandler(false);
-        //private Dictionary<int, UserInfo> _usersInfo = new Dictionary<int, UserInfo>();
-        private Dictionary<int, UserRecord> _onlineUsers = new Dictionary<int, UserRecord>();
-        private SemaphoreSlim _infoSync = new SemaphoreSlim(1, 1);
-        //private SemaphoreSlim _onlineSync = new SemaphoreSlim(1, 1);
 
-        public event EventHandler<PayloadEventArgs<PayloadPacket<ClientProtocol.ChatBody>>> OnGotChat;
-        public event EventHandler<PayloadEventArgs<PayloadPacket<LogOnBody>>> OnGotLogOn;
-        public event EventHandler<PayloadEventArgs<PayloadPacket<LogOutBody>>> OnGotLogOut;
-        public event EventHandler<PayloadEventArgs<PayloadPacket<HeartBeatBody>>> OnGotHeartBeat;
+        public event EventHandler<ChatEventArgs> OnGotChat;
+        public event EventHandler<LogOnEventArgs> OnGotLogOn;
+        public event EventHandler<LogOutEventArgs> OnGotLogOut;
+        public event EventHandler<HeartBeatEventArgs> OnGotHeartBeat;
+
+        private Dictionary<int, UserRecord> _userRecords = new Dictionary<int, UserRecord>();
+        private ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         public ChatServer()
         {
@@ -46,65 +36,154 @@ namespace Server
             OnGotHeartBeat += ProcessGotHeartBeat;
         }
 
-        private async void ProcessGotHeartBeat(object sender, PayloadEventArgs<PayloadPacket<HeartBeatBody>> e)
+        public UserRecord QueryRecord(int userId)
         {
-            Console.WriteLine("Got heartbeat!");
-            var id = e.Body.Body.UserId;
-            await _infoSync.WaitAsync();
+            UserRecord record;
+            _rwLock.EnterReadLock();
+            record = new UserRecord(_userRecords[userId]);
+            _rwLock.ExitReadLock();
+            return record;
+        }
+
+        bool HasUser(int userId)
+        {
+            _rwLock.EnterReadLock();
             try
             {
-                if (_onlineUsers.ContainsKey(id))
-                    _onlineUsers[id].LastHeartBeatTime += TimeSpan.FromSeconds(10000);
+                return _userRecords.ContainsKey(userId);
             }
             finally
             {
-                _infoSync.Release();
-            }            
-        }
-
-        private void ProcessGotChat(object sender, PayloadEventArgs<PayloadPacket<ClientProtocol.ChatBody>> e)
-        {
-            var message = e.Body;
-            SendServerMessage(message.UserData as IPAddress, new ServerProtocol.Packet
-            {
-                Kind = ServerProtocol.MessageKind.Chat,
-                Body = new ServerProtocol.ChatBody
-                {
-                    ChatContent = message.Body.ChatContent
-                }
-            });
-        }
-
-        private async void ProcessHeartBeat()
-        {
-            await _infoSync.WaitAsync();
-            try
-            {
-                var userToRemove = _onlineUsers.Where(kv => DateTime.Now > kv.Value.LastHeartBeatTime).ToArray();
-                foreach (var u in userToRemove)
-                    _onlineUsers.Remove(u.Key);
+                _rwLock.ExitReadLock();
             }
-            finally
+        }
+
+        private UserRecord GetRecordByRef(int userId)
+        {
+            UserRecord record = null;
+            _rwLock.EnterReadLock();
+            _userRecords.TryGetValue(userId, out record);
+            _rwLock.ExitReadLock();
+            return record;
+        }
+
+        public void AddRecord(int userId, UserRecord record)
+        {
+            if(!HasUser(userId))
             {
-                _infoSync.Release();
+                _rwLock.EnterWriteLock();
+                _userRecords.Add(userId, record);
+                _rwLock.ExitWriteLock();
             }           
         }
 
-        /// <summary>
-        /// Uses reflection to get the field value from an object.
-        /// </summary>
-        ///
-        /// <param name="type">The instance type.</param>
-        /// <param name="instance">The instance object.</param>
-        /// <param name="fieldName">The field's name which is to be fetched.</param>
-        ///
-        /// <returns>The field value from the object.</returns>
-        internal static object GetInstanceField(Type type, object instance, string fieldName)
+        private TcpClient GetClient(int userId)
         {
-            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
-                | BindingFlags.Static;
-            FieldInfo field = type.GetField(fieldName, bindFlags);
-            return field.GetValue(instance);
+            UserRecord record = null;
+            _rwLock.EnterReadLock();
+            try
+            {
+                if (_userRecords.TryGetValue(userId, out record))
+                    return record.Client;
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
+            return null;
+        }
+
+        public void RemoveRecord(int userId)
+        {
+            if(HasUser(userId))
+            {
+                _rwLock.EnterWriteLock();
+                _userRecords.Remove(userId);
+                _rwLock.ExitWriteLock();
+            }               
+        }
+
+        public void SetOnlineStatus(int userId, bool isOnline)
+        {
+            var record = GetRecordByRef(userId);
+            _rwLock.EnterWriteLock();
+            record.IsOnline = isOnline;
+            _rwLock.ExitWriteLock();
+        }
+
+        public void SetOnline(int userId)
+        {
+            SetOnlineStatus(userId, true);
+        }
+
+        public void SetOffline(int userId)
+        {
+            SetOnlineStatus(userId, false);
+        }
+
+        private void AddHeartBeat(int userId)
+        {
+            var record = GetRecordByRef(userId);
+            _rwLock.EnterWriteLock();
+            record.LastHeartBeatTime += TimeSpan.FromSeconds(5);
+            _rwLock.ExitWriteLock();
+        }
+
+        public List<int> GetOnlineUsers()
+        {
+            try
+            {
+                _rwLock.EnterReadLock();
+                {
+                    return new List<int>(from v in _userRecords.Values
+                                         where v.IsOnline
+                                         select v.UserId);
+                }
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
+        }
+
+        private void ProcessGotHeartBeat(object sender, HeartBeatEventArgs e)
+        {
+            AddHeartBeat(e.UserId);
+        }
+
+        private void ProcessGotChat(object sender, ChatEventArgs e)
+        {
+            var client = GetClient(e.DestinationUserId);
+            if(client != null)
+            {
+                MessageHandler.SendMessage(client, new ServerProtocol.PacketHeader
+                {
+                    Kind = ServerProtocol.MessageKind.Chat
+                },
+                new ServerProtocol.ChatPacket
+                {
+                    SourceId = e.UserId,
+                    ChatContent = e.ChatContent
+                });
+            }           
+        }
+
+        private void ProcessHeartBeat()
+        {
+            _rwLock.EnterWriteLock();
+            try
+            {
+                foreach (var key in _userRecords.Keys)
+                {
+                    var record = _userRecords[key];
+                    if (record.IsOnline && record.LastHeartBeatTime < DateTime.Now)
+                        record.IsOnline = false;
+                }
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
+            }           
         }
 
         public void Start()
@@ -117,11 +196,7 @@ namespace Server
                 {
                     Console.WriteLine("Listening.");
                     var client = listener.AcceptTcpClientAsync().Result;                   
-                    var clientAddress = ((GetInstanceField(typeof(TcpClient), client, "_clientSocket") as Socket).RemoteEndPoint as IPEndPoint).Address;
-                    Console.WriteLine($"Accepted from {clientAddress}");
-                    Task.Run(async () =>
-                        ProcessClientMessage(await RestorePacket(await StringReader.Read(client.GetStream()))
-                        , clientAddress));
+                    Task.Run(() => ServeForClient(client));
                 }
             }
             catch(Exception e)
@@ -134,108 +209,55 @@ namespace Server
                 listener.Stop();
             }           
         }
-
-        private async Task<ClientProtocol.Packet> RestorePacket(string json)
+       
+        private void ServeForClient(TcpClient client)
         {
-            return await Task.Run(() =>
+            MessageHandler.ReceiveMessage(client, ProcessClientMessage);
+        }
+
+        private void ProcessLogOn(object sender, LogOnEventArgs e)
+        {
+            MessageHandler.SendMessage(QueryRecord(e.UserId).Client,
+                new ServerProtocol.PacketHeader
+                {                  
+                    Kind = ServerProtocol.MessageKind.Info
+                },
+            new InfoPacket
             {
-                var packet = JsonConvert.DeserializeObject<ClientProtocol.Packet>(json);
-                var jBody = packet.Body as JObject;
-                switch (packet.Kind)
+                Info = new UserInfo
                 {
-                    case ClientProtocol.MessageKind.Chat:
-                        packet.Body = jBody.ToObject<ClientProtocol.ChatBody>();
-                        break;
-                    case ClientProtocol.MessageKind.HeartBeat:
-                        packet.Body = jBody.ToObject<HeartBeatBody>();
-                        break;
-                    case ClientProtocol.MessageKind.LogOn:
-                        packet.Body = jBody.ToObject<LogOnBody>();
-                        break;
-                    case ClientProtocol.MessageKind.LogOut:
-                        packet.Body = jBody.ToObject<LogOutBody>();
-                        break;
-                }
-                return packet;
+                    UserID = e.UserId
+                },
+                OnlineUsers = GetOnlineUsers()
             });
         }
 
-        private async void ProcessLogOn(object sender, PayloadEventArgs<PayloadPacket<LogOnBody>> e)
+        private void ProcessLogOut(object sender, LogOutEventArgs e)
         {
-            Console.WriteLine("LogOn!");
-            var body = e.Body;
-            var address = body.UserData as IPAddress;
-            await _infoSync.WaitAsync();
-            try
-            {
-                _onlineUsers.Add(body.Body.UserId, new UserRecord
-                {
-                    LastHeartBeatTime = DateTime.Now + TimeSpan.FromSeconds(2),
-                    UserAddress = (IPAddress)body.UserData
-                });
-            }
-            finally
-            {
-                _infoSync.Release();
-            }
-
-            SendServerMessage(address, new ServerProtocol.Packet
-            {
-                SequenceNumberResponceTo = body.Header.SequenceNumber,
-                Kind = ServerProtocol.MessageKind.Info,
-                Body = new InfoBody()
-            });
+            SetOffline(e.UserId);
         }
 
-        private async void ProcessLogOut(object sender, PayloadEventArgs<PayloadPacket<LogOutBody>> e)
+        private void ProcessClientMessage(string headerJson, string bodyJson, TcpClient client)
         {
-            var body = e.Body;
-            var id = body.Body.UserId;
-            await _infoSync.WaitAsync();
-            try
-            {
-                if (_onlineUsers.ContainsKey(id))
-                    _onlineUsers.Remove(id);
-                else
-                    goto SendError;
-            }
-            finally
-            {
-                _infoSync.Release();
-            }
-            SendError:
-            SendServerMessage(body.UserData as IPAddress, new ServerProtocol.Packet
-            {
-                SequenceNumberResponceTo = body.Header.SequenceNumber,
-                Kind = ServerProtocol.MessageKind.Error,
-                Body = new ErrorBody
-                {
-                    Error = ErrorKind.RequestAfterLoggingOut
-                }
-            });
-        }
-
-        private async void SendServerMessage(IPAddress address, ServerProtocol.Packet sm)
-        {
-            await _messageHandler.SendMessage(address, sm);
-        }
-
-        private void ProcessClientMessage(ClientProtocol.Packet message, IPAddress address)
-        {
-            switch (message.Kind)
+            var header = JsonConvert.DeserializeObject<ClientProtocol.PacketHeader>(headerJson);
+            var id = header.UserId;
+            AddRecord(id, new UserRecord(client, id));
+            switch (header.Kind)
             {
                 case ClientProtocol.MessageKind.LogOn:
-                    OnGotLogOn?.Invoke(this, new PayloadEventArgs<PayloadPacket<LogOnBody>>(new PayloadPacket<LogOnBody>(message, address)));
+                    OnGotLogOn?.Invoke(this, new LogOnEventArgs(header, JsonConvert.DeserializeObject<LogOnPacket>(bodyJson)));
                     break;
                 case ClientProtocol.MessageKind.LogOut:
-                    OnGotLogOut?.Invoke(this, new PayloadEventArgs<PayloadPacket<LogOutBody>>(new PayloadPacket<LogOutBody>(message, address)));
+                    OnGotLogOut?.Invoke(this, new LogOutEventArgs(header, JsonConvert.DeserializeObject<LogOutPacket>(bodyJson)));
                     break;
                 case ClientProtocol.MessageKind.Chat:
-                    OnGotChat?.Invoke(this, new PayloadEventArgs<PayloadPacket<ClientProtocol.ChatBody>>(new PayloadPacket<ClientProtocol.ChatBody>(message, address)));
+                    OnGotChat?.Invoke(this, new ChatEventArgs(header, JsonConvert.DeserializeObject<ClientProtocol.ChatPacket>(bodyJson)));
                     break;
                 case ClientProtocol.MessageKind.HeartBeat:
-                    OnGotHeartBeat?.Invoke(this, new PayloadEventArgs<PayloadPacket<HeartBeatBody>>(new PayloadPacket<HeartBeatBody>(message, address)));
+                    OnGotHeartBeat?.Invoke(this, new HeartBeatEventArgs(header, JsonConvert.DeserializeObject<HeartBeatPacket>(bodyJson)));
                     break;
+                default:
+                    throw new InvalidOperationException();
             }
         }
     }

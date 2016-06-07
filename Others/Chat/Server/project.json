@@ -2,10 +2,11 @@
   "version": "1.0.0-*",
 
   "dependencies": {
-    "NETStandard.Library": "1.6.0-rc4-24205-02",
+    "NETStandard.Library": "1.6.0-rc4-24207-02",
     "Newtonsoft.Json": "8.0.3",
     "Protocol": "1.0.0-*",
-    "System.Reflection.TypeExtensions": "4.1.0-rc3-24131-00"
+    "System.Reflection.TypeExtensions": "4.1.0-rc3-24131-00",
+    "System.Runtime.Serialization.Formatters": "4.0.0-rc4-24207-02"
   },
 
   "frameworks": {
