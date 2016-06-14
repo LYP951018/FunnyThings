@@ -10,6 +10,7 @@ namespace ServerApp
             var server = new ChatServer();
             server.OnGotChat += (o, e) => Console.WriteLine($"{e.UserId} sends message to {e.DestinationUserId} {e.ChatContent}");
             server.OnGotLogOn += (o, e) => Console.WriteLine($"{e.UserId} log on!");
+            server.OnGotHeartBeat += (o, e) => Console.WriteLine($"{e.UserId} got heartbeat!");
             server.Start();
         }
     }

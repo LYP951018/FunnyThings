@@ -10,29 +10,44 @@
             HeartBeat
         }
        
-        public struct PacketHeader
+        public class PacketHeader
         {
-            public int UserId { get; set; }
-            public MessageKind Kind { get; set; }            
+            public int UserId { get; }
+            public MessageKind Kind { get; }  
+            public uint SequenceNumber { get; }
+
+            public PacketHeader(int userId, MessageKind kind, uint sequenceNumber)
+            {
+                UserId = userId;
+                Kind = kind;
+                SequenceNumber = sequenceNumber;
+            }
         }
              
-        public struct ChatPacket
-        {           
+        public class ChatPacket
+        {
+            //Json.NET bug?
             public int DestinationId { get; set; }
-            public string ChatContent { get; set; }
+            public string ChatContent { get; }
+
+            public ChatPacket(int destId, string chatContent)
+            {
+                DestinationId = destId;
+                ChatContent = chatContent;
+            }
         }
 
-        public struct LogOnPacket
+        public class LogOnPacket
         {
             
         }
 
-        public struct LogOutPacket
+        public class LogOutPacket
         {
             
         }
 
-        public struct HeartBeatPacket
+        public class HeartBeatPacket
         {
            
         }

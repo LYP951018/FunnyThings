@@ -29,7 +29,7 @@ namespace Server
 
         public ChatServer()
         {
-            _timer = new Timer(o => ProcessHeartBeat(), null, 0, 10000);
+            _timer = new Timer(o => ProcessHeartBeat(), null, 0, 9000);
             OnGotLogOn += ProcessLogOn;
             OnGotLogOut += ProcessLogOut;
             OnGotChat += ProcessGotChat;
@@ -58,23 +58,12 @@ namespace Server
             }
         }
 
-        private UserRecord GetRecordByRef(int userId)
-        {
-            UserRecord record = null;
-            _rwLock.EnterReadLock();
-            _userRecords.TryGetValue(userId, out record);
-            _rwLock.ExitReadLock();
-            return record;
-        }
-
         public void AddRecord(int userId, UserRecord record)
         {
-            if(!HasUser(userId))
-            {
-                _rwLock.EnterWriteLock();
+            _rwLock.EnterWriteLock();
+            if (!_userRecords.ContainsKey(userId))
                 _userRecords.Add(userId, record);
-                _rwLock.ExitWriteLock();
-            }           
+            _rwLock.ExitWriteLock();
         }
 
         private TcpClient GetClient(int userId)
@@ -100,32 +89,35 @@ namespace Server
                 _rwLock.EnterWriteLock();
                 _userRecords.Remove(userId);
                 _rwLock.ExitWriteLock();
+                Console.WriteLine($"{userId} log off.");
             }               
         }
 
-        public void SetOnlineStatus(int userId, bool isOnline)
-        {
-            var record = GetRecordByRef(userId);
-            _rwLock.EnterWriteLock();
-            record.IsOnline = isOnline;
-            _rwLock.ExitWriteLock();
-        }
+        //public void SetOnlineStatus(int userId, bool isOnline)
+        //{
+        //    var record = GetRecordByRef(userId);
+        //    _rwLock.EnterWriteLock();
+        //    record.IsOnline = isOnline;
+        //    _rwLock.ExitWriteLock();
+        //}
 
-        public void SetOnline(int userId)
-        {
-            SetOnlineStatus(userId, true);
-        }
+        //public void SetOnline(int userId)
+        //{
+        //    SetOnlineStatus(userId, true);
+        //}
 
-        public void SetOffline(int userId)
-        {
-            SetOnlineStatus(userId, false);
-        }
+        //public void SetOffline(int userId)
+        //{
+        //    SetOnlineStatus(userId, false);
+        //}
 
         private void AddHeartBeat(int userId)
-        {
-            var record = GetRecordByRef(userId);
+        {           
             _rwLock.EnterWriteLock();
-            record.LastHeartBeatTime += TimeSpan.FromSeconds(5);
+            UserRecord record = null;
+            _userRecords.TryGetValue(userId, out record);
+            if(record != null)
+                record.LastHeartBeatTime += TimeSpan.FromSeconds(5);
             _rwLock.ExitWriteLock();
         }
 
@@ -135,9 +127,7 @@ namespace Server
             {
                 _rwLock.EnterReadLock();
                 {
-                    return new List<int>(from v in _userRecords.Values
-                                         where v.IsOnline
-                                         select v.UserId);
+                    return new List<int>(_userRecords.Keys);
                 }
             }
             finally
@@ -157,14 +147,16 @@ namespace Server
             if(client != null)
             {
                 MessageHandler.SendMessage(client, new ServerProtocol.PacketHeader
-                {
-                    Kind = ServerProtocol.MessageKind.Chat
-                },
+                (
+                    ServerProtocol.MessageKind.Chat,
+                    ErrorKind.Ok,
+                    e.SequenceNumber
+                ),
                 new ServerProtocol.ChatPacket
-                {
-                    SourceId = e.UserId,
-                    ChatContent = e.ChatContent
-                });
+                (
+                    e.UserId,
+                    e.ChatContent
+                ));
             }           
         }
 
@@ -173,11 +165,19 @@ namespace Server
             _rwLock.EnterWriteLock();
             try
             {
+                var keysToRemove = new List<int>();
                 foreach (var key in _userRecords.Keys)
                 {
                     var record = _userRecords[key];
-                    if (record.IsOnline && record.LastHeartBeatTime < DateTime.Now)
-                        record.IsOnline = false;
+                    var now = DateTime.Now;
+                    if (/*record.IsOnline && */record.LastHeartBeatTime < now)
+                        //record.IsOnline = false;
+                        keysToRemove.Add(key);
+                }
+                foreach (var k in keysToRemove)
+                {
+                    _userRecords.Remove(k);
+                    Console.WriteLine($"{k} is offline.");
                 }
             }
             finally
@@ -209,7 +209,7 @@ namespace Server
                 listener.Stop();
             }           
         }
-       
+
         private void ServeForClient(TcpClient client)
         {
             MessageHandler.ReceiveMessage(client, ProcessClientMessage);
@@ -217,44 +217,72 @@ namespace Server
 
         private void ProcessLogOn(object sender, LogOnEventArgs e)
         {
+            var id = e.UserId;
+            AddRecord(id, new UserRecord(e.Client, id));
             MessageHandler.SendMessage(QueryRecord(e.UserId).Client,
-                new ServerProtocol.PacketHeader
-                {                  
-                    Kind = ServerProtocol.MessageKind.Info
-                },
-            new InfoPacket
+                new ServerProtocol.PacketHeader(ServerProtocol.MessageKind.Info, ErrorKind.Ok, e.SequenceNumber),
+            new InfoPacket(new UserInfo { UserID = e.UserId }, GetOnlineUsers()));
+            _rwLock.EnterReadLock();
+            foreach(var user in _userRecords)
             {
-                Info = new UserInfo
+                var record = user.Value;
+                if (user.Key != e.UserId)
                 {
-                    UserID = e.UserId
-                },
-                OnlineUsers = GetOnlineUsers()
-            });
+                    Console.WriteLine($"Told {user.Key}  {e.UserId} online!");
+                    MessageHandler.SendMessage(record.Client, new ServerProtocol.PacketHeader(ServerProtocol.MessageKind.NewBodyOnline, ErrorKind.Ok, 0),
+                       new NewBodyOnlinePacket(e.UserId, new UserInfo { UserID = e.UserId }));
+                }
+                   
+            }
+            _rwLock.ExitReadLock();
         }
 
         private void ProcessLogOut(object sender, LogOutEventArgs e)
         {
-            SetOffline(e.UserId);
+            RemoveRecord(e.UserId);
+        }
+
+        private bool Validate(TcpClient client, int userId)
+        {
+            _rwLock.EnterReadLock();
+            try
+            {
+                return client == _userRecords[userId].Client;
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
         }
 
         private void ProcessClientMessage(string headerJson, string bodyJson, TcpClient client)
         {
             var header = JsonConvert.DeserializeObject<ClientProtocol.PacketHeader>(headerJson);
             var id = header.UserId;
-            AddRecord(id, new UserRecord(client, id));
             switch (header.Kind)
             {
                 case ClientProtocol.MessageKind.LogOn:
-                    OnGotLogOn?.Invoke(this, new LogOnEventArgs(header, JsonConvert.DeserializeObject<LogOnPacket>(bodyJson)));
+                    {
+                        if (HasUser(id))
+                        {
+                            //TODO: 发送 null。
+                            MessageHandler.SendMessage(client, new ServerProtocol.PacketHeader(ServerProtocol.MessageKind.Info, ErrorKind.DuplicateId, header.SequenceNumber), null);
+                            return;
+                        }
+                        OnGotLogOn?.Invoke(this, new LogOnEventArgs(header, JsonConvert.DeserializeObject<LogOnPacket>(bodyJson), client));
+                    }
                     break;
                 case ClientProtocol.MessageKind.LogOut:
-                    OnGotLogOut?.Invoke(this, new LogOutEventArgs(header, JsonConvert.DeserializeObject<LogOutPacket>(bodyJson)));
+                    if (Validate(client, id))
+                        OnGotLogOut?.Invoke(this, new LogOutEventArgs(header, JsonConvert.DeserializeObject<LogOutPacket>(bodyJson)));
                     break;
                 case ClientProtocol.MessageKind.Chat:
-                    OnGotChat?.Invoke(this, new ChatEventArgs(header, JsonConvert.DeserializeObject<ClientProtocol.ChatPacket>(bodyJson)));
+                    var body = JsonConvert.DeserializeObject<ClientProtocol.ChatPacket>(bodyJson);
+                    OnGotChat?.Invoke(this, new ChatEventArgs(header, body));
                     break;
                 case ClientProtocol.MessageKind.HeartBeat:
-                    OnGotHeartBeat?.Invoke(this, new HeartBeatEventArgs(header, JsonConvert.DeserializeObject<HeartBeatPacket>(bodyJson)));
+                    if(Validate(client, id))
+                        OnGotHeartBeat?.Invoke(this, new HeartBeatEventArgs(header, JsonConvert.DeserializeObject<HeartBeatPacket>(bodyJson)));
                     break;
                 default:
                     throw new InvalidOperationException();

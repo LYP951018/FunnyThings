@@ -1,4 +1,5 @@
 ﻿using Client;
+using Protocol.Server;
 using System;
 using System.Text.RegularExpressions;
 
@@ -8,10 +9,8 @@ namespace ConsoleChatApp
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("Input ID!");
-            var idStr = Console.ReadLine();
-            var id = Int32.Parse(idStr);
-            var client = new ChatClient(id);
+           
+            var client = new ChatClient();
             client.OnGotInfo += (o, e) =>
             {
                 foreach (var f in e.OnlineUsers)
@@ -19,8 +18,28 @@ namespace ConsoleChatApp
             };
             client.OnGotMessage += (o, e) =>
                 Console.WriteLine($"Got message fron {e.SourceId}! {e.ChatContent}");
+            client.OnGotError += (o, e) =>
+            {
+                if (e.Error == ErrorKind.DuplicateId)
+                    Console.WriteLine("Duplicated ID!");
+            };
             client.Start();
-            client.LogOn();
+            while(true)
+            {
+                try
+                {
+                    Console.WriteLine("Input ID!");
+                    var idStr = Console.ReadLine();
+                    var id = Int32.Parse(idStr);
+                    client.LogOn(id).Wait();
+                    break;
+                }
+                catch(AggregateException e)
+                {
+                    e.Handle(ex => ex is DuplicateIdException);
+                }
+            }
+            
             while (true)
             {
                 var input = Console.ReadLine();

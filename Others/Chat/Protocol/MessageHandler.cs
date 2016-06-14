@@ -10,6 +10,7 @@ namespace Protocol
     {
         public static async void SendMessage(TcpClient client, object header, object body)
         {
+            if (!client.Connected) return;
             var headerJson = JsonConvert.SerializeObject(header);
             var bodyJson = JsonConvert.SerializeObject(body);
             var builder = new StringBuilder(headerJson.Length + bodyJson.Length + 10);
@@ -38,36 +39,51 @@ namespace Protocol
 
         public static async void ReceiveMessage(TcpClient client, Action<string, string, TcpClient> action)
         {
+            if (!client.Connected) return;
+
             var buffer = new byte[2048];
             var chars = new char[2048];
             var builder = new StringBuilder();
             var decoder = Encoding.ASCII.GetDecoder();
             var ns = client.GetStream();
-            while (true)
+            try
             {
-                builder.Clear();
-                if (!client.Connected)
-                    break;
-
-                //先得到总长度。
-                await ns.ReadAsync(buffer, 0, 4);
-                var totalLength = BitConverter.ToInt32(buffer, 0);
-                var bytesToRecv = totalLength;
-
-                do
+                while (true)
                 {
-                    var bytesRead = await ns.ReadAsync(buffer, 0, Math.Min(bytesToRecv, buffer.Length));
-                    var charsCount = decoder.GetChars(buffer, 0, bytesRead, chars, 0);
-                    builder.Append(chars, 0, charsCount);
-                    bytesToRecv -= bytesRead;
-                } while (bytesToRecv > 0);
+                    builder.Clear();
 
-                var json = builder.ToString();
+                    //先得到总长度。
+                    await ns.ReadAsync(buffer, 0, 4);
+                    var totalLength = BitConverter.ToInt32(buffer, 0);
+                    var bytesToRecv = totalLength;
 
-                var packet = JsonConvert.DeserializeObject<Packet>(json);
+                    do
+                    {
+                        var bytesRead = await ns.ReadAsync(buffer, 0, Math.Min(bytesToRecv, buffer.Length));
+                        var charsCount = decoder.GetChars(buffer, 0, bytesRead, chars, 0);
+                        builder.Append(chars, 0, charsCount);
+                        bytesToRecv -= bytesRead;
+                    } while (bytesToRecv > 0);
 
-                action(packet.Header, packet.Body, client);
-            }            
+                    var json = builder.ToString();
+
+                    var packet = JsonConvert.DeserializeObject<Packet>(json);
+
+                    action(packet.Header, packet.Body, client);
+                }
+            }
+            catch(SocketException)
+            {
+                return;
+            }
+            catch(IOException)
+            {
+                return;
+            }
+            catch(Exception)
+            {
+                return;
+            }
         }
     }
 }

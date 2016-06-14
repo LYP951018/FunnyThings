@@ -1,0 +1,56 @@
+﻿<local:TitleBarFreeWindow x:Class="WpfClientApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfClientApp"
+        mc:Ignorable="d"
+        Title="{Binding UserId}" Height="350" Width="525" TitleBarBackground="Blue" TitleBarForeground="White">
+    <Grid DataContext="{Binding Messages}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <ListBox Name="ContactList" Grid.Column="0" HorizontalAlignment="Stretch" ItemsSource="{Binding}" SelectedIndex="{Binding DataContext.CurrentIndex, Mode=OneWayToSource, RelativeSource={RelativeSource FindAncestor, 
+AncestorType={x:Type Window}}}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border>
+                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Text="{Binding Path=DestUserId}" FontSize="20"/>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"/>
+        <Grid Margin="2,0,0,0" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ListBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" DataContext="{Binding Path=SelectedItem, ElementName=ContactList}" ItemsSource="{Binding Path=Messages}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" FontSize="8" Background="Transparent" Text="{Binding Path=SourceUserId}"/>
+                                <TextBlock Grid.Row="1" Text="{Binding Path=Content}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBox Grid.Row="1" Grid.Column="0" Text="{Binding Path=DataContext.MessageToSend, RelativeSource={RelativeSource FindAncestor, 
+AncestorType={x:Type Window}}}" Width="100"/>
+            <Button Grid.Row="1" Grid.Column="1" Command="{Binding DataContext.SendCommand, RelativeSource={RelativeSource FindAncestor, 
+AncestorType={x:Type Window}}}" HorizontalAlignment="Right" Margin="0,0,5,5" Foreground="White" Padding="15,0" Content="Send" FontSize="15" Background="Blue"/>
+        </Grid>
+    </Grid>
+</local:TitleBarFreeWindow>

@@ -6,44 +6,67 @@ namespace Protocol
     {
         public enum ErrorKind : byte
         {
+            Ok,
             InvalidId,
-            RequestAfterLoggingOut
+            RequestAfterLoggingOut,
+            DuplicateId
         }
 
         public enum MessageKind : byte
         {
-            Error,
             Chat,
             Info,
             NewBodyOnline
         }
 
-        public struct PacketHeader
+        public class PacketHeader
         {           
-            public MessageKind Kind { get; set; }
-        }
-        
-        public struct ErrorPacket
-        {
-            public ErrorKind Error { get; set; }
+            public MessageKind Kind { get;}
+            public ErrorKind Error { get; }
+            public uint SequenceNumberResponseTo { get; }
+
+            public PacketHeader(MessageKind kind, ErrorKind error, uint responseTo)
+            {
+                Kind = kind;
+                Error = error;
+                SequenceNumberResponseTo = responseTo;
+            }
         }
 
-        public struct ChatPacket
+        public class ChatPacket
         {
-            public int SourceId { get; set; }
-            public string ChatContent { get; set; }
+            public int SourceId { get; }
+            public string ChatContent { get; }
+
+            public ChatPacket(int sourceId, string chatContent)
+            {
+                SourceId = sourceId;
+                ChatContent = chatContent;
+            }
         }
 
-        public struct InfoPacket
+        public class InfoPacket
         {
-            public UserInfo Info { get; set; }
-            public List<int> OnlineUsers { get; set; }
+            public UserInfo Info { get; }
+            public List<int> OnlineUsers { get; }
+            
+            public InfoPacket(UserInfo info, IEnumerable<int> onlineUsers)
+            {
+                Info = info;
+                OnlineUsers = onlineUsers == null ? null : new List<int>(onlineUsers);
+            }
         }
 
-        public struct NewBodyOnlinePacket
+        public class NewBodyOnlinePacket
         {
-            public int UserId { get; set; }
-            public UserInfo Info { get; set; }
+            public int UserId { get; }
+            public UserInfo Info { get; }
+
+            public NewBodyOnlinePacket(int userId, UserInfo info)
+            {
+                UserId = userId;
+                Info = info;
+            }
         }
     }
   

@@ -50,10 +50,10 @@ namespace Client
     {
         public ErrorKind Error { get; private set; }
 
-        public ErrorEventArgs(PacketHeader header, ErrorPacket body)
+        public ErrorEventArgs(PacketHeader header)
             : base(header)
         {
-            Error = body.Error;
+            Error = header.Error;
         }
     }
 
